@@ -1,0 +1,11 @@
+[package]
+name = "fsn-manager-icons"
+version = "0.1.0"
+edition = "2021"
+description = "FreeSynergy Icon Manager — knows available icon sets, provides icon picker component"
+
+[lib]
+name = "fsn_manager_icons"
+path = "src/lib.rs"
+
+[dependencies]

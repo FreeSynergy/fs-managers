@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "language",
+    "theme",
+    "container_app",
+    "icons",
+]
+resolver = "2"
