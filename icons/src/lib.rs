@@ -8,15 +8,21 @@
 //
 // Any program that needs an icon picker uses IconManager instead of
 // building its own file browser or hardcoding paths.
+//
+// Repository management uses fsn_core::RepositoryManager<IconRepository> —
+// the same generic abstraction shared by the Store and Bundle Manager.
 
 use std::path::PathBuf;
 
-// ── Repository ────────────────────────────────────────────────────────────────
+use fsn_core::{Repository, RepositoryManager};
+pub use fsn_core::RepositoryError;
+
+// ── IconRepository ────────────────────────────────────────────────────────────
 
 /// A configured source repository for icon sets.
 ///
 /// Builtin repositories (e.g. the FreeSynergy.Icons repo) cannot be deleted —
-/// only disabled. This rule is enforced by RepositoryManager.
+/// only disabled. This rule is enforced by [`RepositoryManager`].
 #[derive(Debug, Clone)]
 pub struct IconRepository {
     pub id: String,
@@ -28,7 +34,14 @@ pub struct IconRepository {
     pub builtin: bool,
 }
 
-// ── Icon Set ──────────────────────────────────────────────────────────────────
+impl Repository for IconRepository {
+    fn id(&self) -> &str { &self.id }
+    fn builtin(&self) -> bool { self.builtin }
+    fn enabled(&self) -> bool { self.enabled }
+    fn set_enabled(&mut self, enabled: bool) { self.enabled = enabled; }
+}
+
+// ── IconSet ───────────────────────────────────────────────────────────────────
 
 /// An installed icon set with full metadata.
 #[derive(Debug, Clone)]
@@ -41,11 +54,13 @@ pub struct IconSet {
     pub source_repo_id: String,
     /// Absolute path to the set directory on disk.
     pub path: PathBuf,
-    /// Number of icons (light variants only, dark variants not counted separately).
+    /// Number of icons (light variants only; dark variants not counted separately).
     pub icon_count: usize,
     /// Built-in sets ship with FreeSynergy and cannot be removed.
     pub builtin: bool,
 }
+
+// ── Icon ──────────────────────────────────────────────────────────────────────
 
 /// A resolved icon ready for display or copying.
 #[derive(Debug, Clone)]
@@ -62,7 +77,7 @@ pub struct Icon {
 /// an icon selection UI (Theme Manager, package editor, desktop settings, …).
 #[derive(Debug, Clone, Default)]
 pub struct IconPickerFilter {
-    /// Limit results to a specific set. None = all sets.
+    /// Limit results to a specific set. `None` = all sets.
     pub set_id: Option<String>,
     /// Case-insensitive substring match on icon name.
     pub search: Option<String>,
@@ -78,8 +93,9 @@ pub struct PickedIcon {
 impl PickedIcon {
     /// Copies the icon file to `target_path`.
     ///
-    /// The caller is responsible for choosing the destination
-    /// (e.g. a program's own assets directory or a theme folder).
+    /// The caller chooses the destination (e.g. a program's own assets
+    /// directory or a theme folder). The icon file is then independent of
+    /// the source set.
     pub fn copy_to(&self, target_path: &std::path::Path) -> Result<(), IconError> {
         std::fs::copy(&self.icon.path, target_path)
             .map(|_| ())
@@ -87,80 +103,26 @@ impl PickedIcon {
     }
 }
 
-// ── Repository Manager ────────────────────────────────────────────────────────
-
-/// Manages a list of repositories with per-program rules.
-///
-/// The same pattern is used by the Store, Bundle Manager, and Icon Manager —
-/// each program instantiates its own RepositoryManager with its rule set.
-///
-/// Rules encoded here for the Icon Manager:
-/// - Builtin repositories cannot be removed (only disabled).
-pub struct RepositoryManager {
-    repositories: Vec<IconRepository>,
-}
-
-impl RepositoryManager {
-    pub fn new(repositories: Vec<IconRepository>) -> Self {
-        Self { repositories }
-    }
-
-    pub fn list(&self) -> &[IconRepository] {
-        &self.repositories
-    }
-
-    pub fn enabled(&self) -> impl Iterator<Item = &IconRepository> {
-        self.repositories.iter().filter(|r| r.enabled)
-    }
-
-    pub fn add(&mut self, repo: IconRepository) {
-        self.repositories.push(repo);
-    }
-
-    /// Removes a repository by ID.
-    ///
-    /// Returns `Err` if the repository is builtin — builtin repos can only
-    /// be disabled, never deleted.
-    pub fn remove(&mut self, id: &str) -> Result<(), IconError> {
-        let pos = self
-            .repositories
-            .iter()
-            .position(|r| r.id == id)
-            .ok_or_else(|| IconError::RepositoryNotFound(id.into()))?;
-
-        if self.repositories[pos].builtin {
-            return Err(IconError::CannotRemoveBuiltin(id.into()));
-        }
-
-        self.repositories.remove(pos);
-        Ok(())
-    }
-
-    pub fn set_enabled(&mut self, id: &str, enabled: bool) -> Result<(), IconError> {
-        let repo = self
-            .repositories
-            .iter_mut()
-            .find(|r| r.id == id)
-            .ok_or_else(|| IconError::RepositoryNotFound(id.into()))?;
-        repo.enabled = enabled;
-        Ok(())
-    }
-}
-
-// ── Icon Manager ──────────────────────────────────────────────────────────────
+// ── IconManager ───────────────────────────────────────────────────────────────
 
 /// Central manager for icon sets.
 ///
 /// Knows where icon sets live on disk, resolves icons by name and variant,
 /// and provides a filtered list for the icon picker UI.
+///
+/// Repository management is delegated to
+/// `RepositoryManager<IconRepository>` from `fsn-core`.
 pub struct IconManager {
     /// Root directory that contains all installed icon sets.
     icons_root: PathBuf,
-    pub repositories: RepositoryManager,
+    pub repositories: RepositoryManager<IconRepository>,
 }
 
 impl IconManager {
-    pub fn new(icons_root: impl Into<PathBuf>, repositories: Vec<IconRepository>) -> Self {
+    pub fn new(
+        icons_root: impl Into<PathBuf>,
+        repositories: Vec<IconRepository>,
+    ) -> Self {
         Self {
             icons_root: icons_root.into(),
             repositories: RepositoryManager::new(repositories),
@@ -265,7 +227,9 @@ impl IconManager {
         }
 
         let mut names = Vec::new();
-        for entry in std::fs::read_dir(&set_dir).map_err(|e| IconError::IoError(e.to_string()))? {
+        for entry in
+            std::fs::read_dir(&set_dir).map_err(|e| IconError::IoError(e.to_string()))?
+        {
             let entry = entry.map_err(|e| IconError::IoError(e.to_string()))?;
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("svg") {
@@ -303,7 +267,6 @@ fn count_icons(set_dir: &std::path::Path) -> usize {
 
 // ── Manifest parser ───────────────────────────────────────────────────────────
 
-/// Intermediate type used during manifest parsing (no path/count yet).
 struct IconSetProto {
     id: String,
     name: String,
@@ -352,11 +315,10 @@ fn parse_manifest_sets(content: &str) -> Vec<IconSetProto> {
     sets
 }
 
-fn kv<'a>(line: &'a str, key: &str) -> Option<String> {
+fn kv(line: &str, key: &str) -> Option<String> {
     let prefix = format!("{key} =");
     let rest = line.strip_prefix(&prefix)?.trim();
-    let val = rest.trim_matches('"');
-    Some(val.to_string())
+    Some(rest.trim_matches('"').to_string())
 }
 
 #[derive(Default)]
@@ -387,11 +349,12 @@ impl IconSetBuilder {
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 
+/// Errors for icon set operations.
+///
+/// For repository errors use [`RepositoryError`] (re-exported from `fsn-core`).
 #[derive(Debug)]
 pub enum IconError {
     SetNotFound(String),
-    RepositoryNotFound(String),
-    CannotRemoveBuiltin(String),
     IoError(String),
 }
 
@@ -399,10 +362,6 @@ impl std::fmt::Display for IconError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SetNotFound(id) => write!(f, "Icon set not found: {id}"),
-            Self::RepositoryNotFound(id) => write!(f, "Repository not found: {id}"),
-            Self::CannotRemoveBuiltin(id) => {
-                write!(f, "Cannot remove builtin repository: {id}")
-            }
             Self::IoError(msg) => write!(f, "IO error: {msg}"),
         }
     }
