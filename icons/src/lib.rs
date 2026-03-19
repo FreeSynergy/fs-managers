@@ -13,7 +13,9 @@
 pub struct IconSet {
     pub id: String,
     pub name: String,
+    pub description: String,
     pub has_dark_variants: bool,
+    pub builtin: bool,
 }
 
 /// A resolved icon with its file path.
@@ -37,14 +39,12 @@ impl IconManager {
 
     /// Returns all available icon sets from manifest.toml.
     pub fn sets(&self) -> Vec<IconSet> {
-        // TODO: parse icons_root/manifest.toml
-        vec![
-            IconSet {
-                id: "homarrlabs".into(),
-                name: "Homarr Labs Dashboard Icons".into(),
-                has_dark_variants: true,
-            },
-        ]
+        let manifest_path = self.icons_root.join("manifest.toml");
+        let content = match std::fs::read_to_string(&manifest_path) {
+            Ok(c) => c,
+            Err(_) => return vec![],
+        };
+        parse_manifest_sets(&content)
     }
 
     /// Resolves an icon by set ID and name, preferring the dark variant if requested.
@@ -100,6 +100,81 @@ impl IconManager {
         Ok(names)
     }
 }
+
+// ── Manifest parser ───────────────────────────────────────────────────────────
+
+/// Parses `[[set]]` entries from manifest.toml without pulling in a TOML crate.
+///
+/// Minimal hand-rolled parser: iterates [[set]] blocks and extracts known keys.
+fn parse_manifest_sets(content: &str) -> Vec<IconSet> {
+    let mut sets = Vec::new();
+    let mut current: Option<IconSetBuilder> = None;
+
+    for line in content.lines() {
+        let line = line.trim();
+        if line == "[[set]]" {
+            if let Some(builder) = current.take() {
+                if let Some(set) = builder.build() {
+                    sets.push(set);
+                }
+            }
+            current = Some(IconSetBuilder::default());
+            continue;
+        }
+        if let Some(ref mut builder) = current {
+            if let Some(val) = kv(line, "id") {
+                builder.id = val;
+            } else if let Some(val) = kv(line, "name") {
+                builder.name = val;
+            } else if let Some(val) = kv(line, "description") {
+                builder.description = val;
+            } else if let Some(val) = kv(line, "has_dark_variants") {
+                builder.has_dark_variants = val == "true";
+            } else if let Some(val) = kv(line, "builtin") {
+                builder.builtin = val == "true";
+            }
+        }
+    }
+    if let Some(builder) = current {
+        if let Some(set) = builder.build() {
+            sets.push(set);
+        }
+    }
+    sets
+}
+
+/// Extracts the value of `key = "value"` or `key = value` from a TOML line.
+fn kv<'a>(line: &'a str, key: &str) -> Option<String> {
+    let prefix = format!("{key} =");
+    let rest = line.strip_prefix(&prefix)?.trim();
+    // Strip surrounding quotes if present.
+    let val = rest.trim_matches('"');
+    Some(val.to_string())
+}
+
+#[derive(Default)]
+struct IconSetBuilder {
+    id: String,
+    name: String,
+    description: String,
+    has_dark_variants: bool,
+    builtin: bool,
+}
+
+impl IconSetBuilder {
+    fn build(self) -> Option<IconSet> {
+        if self.id.is_empty() { return None; }
+        Some(IconSet {
+            id: self.id,
+            name: self.name,
+            description: self.description,
+            has_dark_variants: self.has_dark_variants,
+            builtin: self.builtin,
+        })
+    }
+}
+
+// ── Errors ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
 pub enum IconError {
