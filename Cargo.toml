@@ -4,5 +4,6 @@ members = [
     "theme",
     "container_app",
     "icons",
+    "cursor",
 ]
 resolver = "2"

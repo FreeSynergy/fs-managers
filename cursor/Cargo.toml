@@ -1,0 +1,12 @@
+[package]
+name = "fsn-manager-cursor"
+version = "0.1.0"
+edition = "2021"
+description = "FreeSynergy Cursor Manager — manages mouse pointer sets, provides creation and activation"
+
+[lib]
+name = "fsn_manager_cursor"
+path = "src/lib.rs"
+
+[dependencies]
+fsn-core = { path = "../../FreeSynergy.Lib/fsn-core" }

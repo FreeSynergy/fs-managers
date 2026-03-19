@@ -17,6 +17,13 @@ name = "fsn-manager-container-app"
 version = "0.1.0"
 
 [[package]]
+name = "fsn-manager-cursor"
+version = "0.1.0"
+dependencies = [
+ "fsn-core",
+]
+
+[[package]]
 name = "fsn-manager-icons"
 version = "0.1.0"
 dependencies = [
