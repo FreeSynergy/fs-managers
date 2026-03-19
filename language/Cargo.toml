@@ -2,10 +2,12 @@
 name = "fsn-manager-language"
 version = "0.1.0"
 edition = "2021"
-description = "FreeSynergy Language Manager — reads/writes the active language, provides UI picker component"
+description = "FreeSynergy Language Manager — locale settings (Store default + Inventory override), SSH contributor check"
 
 [lib]
 name = "fsn_manager_language"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+toml  = "0.8"
