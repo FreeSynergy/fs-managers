@@ -29,8 +29,8 @@ impl Language {
     /// Returns the inline SVG flag for this language, or an empty string if unknown.
     pub fn flag_svg(&self) -> &'static str {
         match self.id.as_str() {
-            "en" => r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36" width="24" height="14"><rect width="60" height="36" fill="#012169"/><line x1="0" y1="0" x2="60" y2="36" stroke="#FFFFFF" stroke-width="12"/><line x1="60" y1="0" x2="0" y2="36" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="0" x2="60" y2="36" stroke="#C8102E" stroke-width="6"/><line x1="60" y1="0" x2="0" y2="36" stroke="#C8102E" stroke-width="6"/><rect x="24" y="0" width="12" height="36" fill="#FFFFFF"/><rect x="0" y="12" width="60" height="12" fill="#FFFFFF"/><rect x="26" y="0" width="8" height="36" fill="#C8102E"/><rect x="0" y="14" width="60" height="8" fill="#C8102E"/></svg>"#,
-            "de" => r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 3" width="24" height="14"><rect width="5" height="1" fill="#000000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>"#,
+            "en" => r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36" width="24" height="14"><rect width="60" height="36" fill="#012169"/><line x1="0" y1="0" x2="60" y2="36" stroke="#FFFFFF" stroke-width="12"/><line x1="60" y1="0" x2="0" y2="36" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="0" x2="60" y2="36" stroke="#C8102E" stroke-width="6"/><line x1="60" y1="0" x2="0" y2="36" stroke="#C8102E" stroke-width="6"/><rect x="24" y="0" width="12" height="36" fill="#FFFFFF"/><rect x="0" y="12" width="60" height="12" fill="#FFFFFF"/><rect x="26" y="0" width="8" height="36" fill="#C8102E"/><rect x="0" y="14" width="60" height="8" fill="#C8102E"/></svg>"##,
+            "de" => r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 3" width="24" height="14"><rect width="5" height="1" fill="#000000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>"##,
             _ => "",
         }
     }
