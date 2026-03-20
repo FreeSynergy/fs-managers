@@ -9,4 +9,4 @@ name = "fsn_manager_icons"
 path = "src/lib.rs"
 
 [dependencies]
-fsn-core = { path = "../../FreeSynergy.Lib/fsn-core" }
+fsn-core = { path = "../../FreeSynergy.Libs/fsn-core" }
