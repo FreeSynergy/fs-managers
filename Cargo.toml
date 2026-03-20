@@ -5,6 +5,5 @@ members = [
     "container_app",
     "icons",
     "cursor",
-    "bots",
 ]
 resolver = "2"
