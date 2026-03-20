@@ -192,7 +192,7 @@ pub enum ResolvedCursor {
 // ── CursorSet ─────────────────────────────────────────────────────────────────
 
 /// An installed cursor set with full metadata.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CursorSet {
     pub id: String,
     pub name: String,
