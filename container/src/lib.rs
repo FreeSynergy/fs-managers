@@ -11,7 +11,7 @@
 
 /// A containerized application entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ContainerApp {
+pub struct Container {
     pub id: String,
     pub name: String,
     pub version: String,
@@ -28,54 +28,54 @@ pub enum AppStatus {
 }
 
 /// Manages containerized applications for the FreeSynergy ecosystem.
-pub struct ContainerAppManager;
+pub struct ContainerManager;
 
-impl ContainerAppManager {
+impl ContainerManager {
     pub fn new() -> Self {
         Self
     }
 
     /// Returns all installed apps and their current status.
-    pub fn installed(&self) -> Vec<ContainerApp> {
+    pub fn installed(&self) -> Vec<Container> {
         // TODO: read from Store / Inventory
         vec![]
     }
 
     /// Installs a container app by ID. Requires Store write permission.
-    pub fn install(&self, app_id: &str) -> Result<(), ContainerAppError> {
+    pub fn install(&self, app_id: &str) -> Result<(), ContainerError> {
         // TODO: pull from Store catalog, deploy via Podman Quadlets
         let _ = app_id;
         Ok(())
     }
 
     /// Removes an installed app. Requires Store write permission.
-    pub fn remove(&self, app_id: &str) -> Result<(), ContainerAppError> {
+    pub fn remove(&self, app_id: &str) -> Result<(), ContainerError> {
         // TODO: stop container, remove Quadlet, update Store
         let _ = app_id;
         Ok(())
     }
 
     /// Starts a stopped app.
-    pub fn start(&self, app_id: &str) -> Result<(), ContainerAppError> {
+    pub fn start(&self, app_id: &str) -> Result<(), ContainerError> {
         let _ = app_id;
         Ok(())
     }
 
     /// Stops a running app.
-    pub fn stop(&self, app_id: &str) -> Result<(), ContainerAppError> {
+    pub fn stop(&self, app_id: &str) -> Result<(), ContainerError> {
         let _ = app_id;
         Ok(())
     }
 }
 
-impl Default for ContainerAppManager {
+impl Default for ContainerManager {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[derive(Debug)]
-pub enum ContainerAppError {
+pub enum ContainerError {
     NotFound(String),
     AlreadyInstalled(String),
     PermissionDenied,
@@ -83,7 +83,7 @@ pub enum ContainerAppError {
     RuntimeError(String),
 }
 
-impl std::fmt::Display for ContainerAppError {
+impl std::fmt::Display for ContainerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotFound(id) => write!(f, "App not found: {id}"),
@@ -95,4 +95,4 @@ impl std::fmt::Display for ContainerAppError {
     }
 }
 
-impl std::error::Error for ContainerAppError {}
+impl std::error::Error for ContainerError {}

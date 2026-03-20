@@ -23,7 +23,7 @@ Store ←→ Manager ←→ Programs / UI
 |---|---|---|
 | `language/` | `fsn-manager-language` | Active language — read, set, UI picker |
 | `theme/` | `fsn-manager-theme` | Active theme — read, set, UI picker |
-| `container_app/` | `fsn-manager-container-app` | Container apps — install, remove, start, stop (formerly Conductor) |
+| `container/` | `fsn-manager-container-app` | Container apps — install, remove, start, stop (formerly Conductor) |
 | `icons/` | `fsn-manager-icons` | Icon sets — resolve paths, UI icon picker |
 
 ## Usage
