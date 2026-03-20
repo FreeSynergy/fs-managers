@@ -300,7 +300,7 @@ fn parse_manifest_sets(content: &str) -> Vec<IconSetProto> {
                 builder.description = val;
             } else if let Some(val) = kv(line, "has_dark_variants") {
                 builder.has_dark_variants = val == "true";
-            } else if let Some(val) = kv(line, "source_repo_id") {
+            } else if let Some(val) = kv(line, "source_repo_id").or_else(|| kv(line, "source")) {
                 builder.source_repo_id = val;
             } else if let Some(val) = kv(line, "builtin") {
                 builder.builtin = val == "true";
@@ -316,9 +316,12 @@ fn parse_manifest_sets(content: &str) -> Vec<IconSetProto> {
 }
 
 fn kv(line: &str, key: &str) -> Option<String> {
-    let prefix = format!("{key} =");
-    let rest = line.strip_prefix(&prefix)?.trim();
-    Some(rest.trim_matches('"').to_string())
+    // Split on first '=' to handle any amount of whitespace around it.
+    let (lhs, rhs) = line.split_once('=')?;
+    if lhs.trim() != key {
+        return None;
+    }
+    Some(rhs.trim().trim_matches('"').to_string())
 }
 
 #[derive(Default)]
