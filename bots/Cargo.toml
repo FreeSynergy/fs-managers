@@ -1,0 +1,46 @@
+[package]
+name        = "fsn-bots"
+description = "Bot runtime — polls messengers, dispatches commands, runs trigger engine"
+version     = "0.1.0"
+edition     = "2021"
+license     = "MIT"
+authors     = ["FreeSynergy.Net"]
+
+[[bin]]
+name = "fsn-bot-runtime"
+path = "src/main.rs"
+
+[dependencies]
+# FreeSynergy Lib
+fsn-channel  = { path = "../../FreeSynergy.Lib/fsn-channel", features = ["all"] }
+fsn-bot      = { path = "../../FreeSynergy.Lib/fsn-bot" }
+fsn-types    = { path = "../../FreeSynergy.Lib/fsn-types" }
+# fsn-inventory pulls in sea-orm/sqlx-sqlite which conflicts with rusqlite.
+# The runtime resolves inventory data via the FSN HTTP API (Phase P).
+
+# Async
+tokio        = { version = "1", features = ["full"] }
+async-trait  = "0.1"
+
+# Serialization
+serde        = { version = "1", features = ["derive"] }
+serde_json   = "1"
+toml         = "0.8"
+
+# Database — use sqlx (same as sea-orm in fsn-inventory to avoid libsqlite3-sys conflict)
+sqlx = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "chrono", "migrate"] }
+
+# HTTP (webhook server)
+axum         = { version = "0.7", features = ["tokio"] }
+
+# Error handling
+anyhow       = "1"
+thiserror    = "2"
+
+# Logging
+tracing           = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Utilities
+uuid    = { version = "1", features = ["v4"] }
+chrono  = { version = "0.4", features = ["serde"] }
