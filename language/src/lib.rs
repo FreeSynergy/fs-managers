@@ -203,6 +203,131 @@ pub struct ResolvedLocaleSettings {
     pub auto_update_packs: bool,
 }
 
+impl ResolvedLocaleSettings {
+    /// Formats year/month/day according to the user's date format preference.
+    ///
+    /// # Example
+    /// ```
+    /// // DateFormat::DmY  → "20.03.2026"
+    /// // DateFormat::MdY  → "03/20/2026"
+    /// // DateFormat::Ymd  → "2026-03-20"
+    /// ```
+    pub fn format_date(&self, year: i32, month: u32, day: u32) -> String {
+        match self.date_format {
+            DateFormat::DmY  => format!("{:02}.{:02}.{}", day, month, year),
+            DateFormat::MdY  => format!("{:02}/{:02}/{}", month, day, year),
+            DateFormat::Ymd  => format!("{}-{:02}-{:02}", year, month, day),
+        }
+    }
+
+    /// Formats hour/minute according to the user's time format preference.
+    ///
+    /// # Example
+    /// ```
+    /// // TimeFormat::H24  → "14:05"
+    /// // TimeFormat::H12  → "02:05 PM"
+    /// ```
+    pub fn format_time(&self, hour: u32, minute: u32) -> String {
+        match self.time_format {
+            TimeFormat::H24 => format!("{:02}:{:02}", hour, minute),
+            TimeFormat::H12 => {
+                let (h, ampm) = match hour {
+                    0       => (12, "AM"),
+                    1..=11  => (hour, "AM"),
+                    12      => (12, "PM"),
+                    _       => (hour - 12, "PM"),
+                };
+                format!("{:02}:{:02} {}", h, minute, ampm)
+            }
+        }
+    }
+
+    /// Formats an integer with thousands separators.
+    ///
+    /// # Example
+    /// ```
+    /// // NumberFormat::EuropeDot  → "1.234.567"
+    /// // NumberFormat::UsComma    → "1,234,567"
+    /// // NumberFormat::SpaceComma → "1 234 567"
+    /// ```
+    pub fn format_integer(&self, value: i64) -> String {
+        let sep = match self.number_format {
+            NumberFormat::EuropeDot  => '.',
+            NumberFormat::UsComma    => ',',
+            NumberFormat::SpaceComma => ' ',
+        };
+        let abs_str = value.unsigned_abs().to_string();
+        let with_sep = group_thousands(&abs_str, sep);
+        if value < 0 { format!("-{}", with_sep) } else { with_sep }
+    }
+
+    /// Formats a float with thousands and decimal separators.
+    ///
+    /// # Example
+    /// ```
+    /// // NumberFormat::EuropeDot  → "1.234,56"
+    /// // NumberFormat::UsComma    → "1,234.56"
+    /// // NumberFormat::SpaceComma → "1 234,56"
+    /// ```
+    pub fn format_decimal(&self, value: f64, decimal_places: usize) -> String {
+        let (thousands, decimal) = match self.number_format {
+            NumberFormat::EuropeDot  => ('.', ','),
+            NumberFormat::UsComma    => (',', '.'),
+            NumberFormat::SpaceComma => (' ', ','),
+        };
+        let raw = format!("{:.prec$}", value.abs(), prec = decimal_places);
+        let mut parts = raw.splitn(2, '.');
+        let int_part = parts.next().unwrap_or("0");
+        let dec_part = parts.next().unwrap_or("");
+        let grouped = group_thousands(int_part, thousands);
+        let sign = if value < 0.0 { "-" } else { "" };
+        if decimal_places > 0 {
+            format!("{}{}{}{}", sign, grouped, decimal, dec_part)
+        } else {
+            format!("{}{}", sign, grouped)
+        }
+    }
+}
+
+/// Groups decimal digit string into thousands blocks separated by `sep`.
+fn group_thousands(digits: &str, sep: char) -> String {
+    let sep_str = sep.to_string();
+    let groups: Vec<&str> = digits
+        .as_bytes()
+        .rchunks(3)
+        .rev()
+        .map(|c| std::str::from_utf8(c).unwrap())
+        .collect();
+    groups.join(&sep_str)
+}
+
+// ── language_from_code ────────────────────────────────────────────────────────
+
+/// Constructs a `Language` from a language code, using known display names and locales.
+pub fn language_from_code(code: &str) -> Language {
+    let (display_name, locale) = match code {
+        "en" => ("English",    "en-US"),
+        "de" => ("Deutsch",    "de-DE"),
+        "fr" => ("Français",   "fr-FR"),
+        "es" => ("Español",    "es-ES"),
+        "it" => ("Italiano",   "it-IT"),
+        "pt" => ("Português",  "pt-PT"),
+        "nl" => ("Nederlands", "nl-NL"),
+        "pl" => ("Polski",     "pl-PL"),
+        "ru" => ("Русский",    "ru-RU"),
+        "ja" => ("日本語",     "ja-JP"),
+        "zh" => ("中文",       "zh-CN"),
+        "ko" => ("한국어",     "ko-KR"),
+        "ar" => ("العربية",   "ar-SA"),
+        other => (other, other),
+    };
+    Language {
+        id:           code.to_string(),
+        display_name: display_name.to_string(),
+        locale:       locale.to_string(),
+    }
+}
+
 // ── LanguageManager ───────────────────────────────────────────────────────────
 
 /// Entry point for all language and locale operations.
@@ -241,19 +366,17 @@ impl LanguageManager {
     /// Returns the currently active language.
     pub fn active(&self) -> Language {
         let code = self.effective_settings().language;
-        Language {
-            id:           code.clone(),
-            display_name: code.clone(), // TODO: look up from LanguageMeta
-            locale:       code,
-        }
+        language_from_code(&code)
     }
 
-    /// Returns all available languages.
-    /// TODO: read from Store catalog.
+    /// Returns the built-in languages.
+    ///
+    /// Note: user-installed language packs are tracked in the Desktop-side PackageRegistry.
+    /// This list covers only languages that are always available without installation.
     pub fn available(&self) -> Vec<Language> {
         vec![
-            Language { id: "en".into(), display_name: "English".into(), locale: "en-US".into() },
-            Language { id: "de".into(), display_name: "Deutsch".into(), locale: "de-DE".into() },
+            language_from_code("en"),
+            language_from_code("de"),
         ]
     }
 
