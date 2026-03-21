@@ -11,20 +11,21 @@ name = "fsn-bot"
 path = "src/main.rs"
 
 [dependencies]
-# Database
-sqlx  = { version = "0.7", features = ["sqlite", "runtime-tokio-rustls", "chrono"] }
-tokio = { version = "1",   features = ["full"] }
+# Database (via internal FSN abstraction — no direct sqlx/sea-orm deps)
+fsn-db    = { path = "../../fs-libs/fsn-db", features = ["sqlite"] }
+fsn-error = { path = "../../fs-libs/fsn-error" }
+tokio     = { version = "1", features = ["full"] }
 
 # Serialization
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml       = "0.8"
+toml       = "1"
 
 # Error handling
 anyhow = "1"
 
 # HTTP (Bus client)
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+reqwest = { version = "0.13", features = ["json"], default-features = false }
 
 # Utilities
 chrono  = { version = "0.4", features = ["serde"] }
