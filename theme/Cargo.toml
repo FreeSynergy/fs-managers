@@ -9,3 +9,4 @@ name = "fs_manager_theme"
 path = "src/lib.rs"
 
 [dependencies]
+fs-core = { path = "../../fs-libs/fs-core" }

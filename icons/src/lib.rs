@@ -14,7 +14,7 @@
 
 use std::path::PathBuf;
 
-use fs_core::{Repository, RepositoryManager};
+use fs_core::{FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase, parse_manifest_sections};
 pub use fs_core::RepositoryError;
 
 // ── IconRepository ────────────────────────────────────────────────────────────
@@ -140,15 +140,15 @@ impl IconManager {
         parse_manifest_sets(&content)
             .into_iter()
             .map(|proto| {
-                let path = self.icons_root.join(&proto.id);
+                let path = self.icons_root.join(&proto.base.id);
                 let icon_count = count_icons(&path);
                 IconSet {
-                    id: proto.id,
-                    name: proto.name,
-                    description: proto.description,
+                    id:                proto.base.id,
+                    name:              proto.base.name,
+                    description:       proto.base.description,
                     has_dark_variants: proto.has_dark_variants,
-                    source_repo_id: proto.source_repo_id,
-                    builtin: proto.builtin,
+                    source_repo_id:    proto.base.source_repo_id,
+                    builtin:           proto.base.builtin,
                     path,
                     icon_count,
                 }
@@ -245,6 +245,11 @@ impl IconManager {
     }
 }
 
+impl FsManager for IconManager {
+    fn id(&self)   -> &str { "icons" }
+    fn name(&self) -> &str { "Icon Manager" }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 fn count_icons(set_dir: &std::path::Path) -> usize {
@@ -267,87 +272,43 @@ fn count_icons(set_dir: &std::path::Path) -> usize {
 
 // ── Manifest parser ───────────────────────────────────────────────────────────
 
+/// Parsed proto for one icon set section — common fields via [`SetBase`],
+/// icon-specific extras appended.
 struct IconSetProto {
-    id: String,
-    name: String,
-    description: String,
+    base:              SetBase,
     has_dark_variants: bool,
-    source_repo_id: String,
-    builtin: bool,
+}
+
+/// Builder that implements the shared [`ManifestBuilder`] contract.
+///
+/// Handles icon-specific fields (`has_dark_variants`) and delegates
+/// all common fields to [`SetBase::apply_field`].
+#[derive(Default)]
+struct IconSetBuilder {
+    base:              SetBase,
+    has_dark_variants: bool,
+}
+
+impl ManifestBuilder for IconSetBuilder {
+    type Output = IconSetProto;
+
+    fn apply_field(&mut self, key: &str, val: String) {
+        match key {
+            "has_dark_variants" => self.has_dark_variants = val == "true",
+            _                   => { self.base.apply_field(key, val); }
+        }
+    }
+
+    fn build(self) -> Option<IconSetProto> {
+        self.base.is_valid().then(|| IconSetProto {
+            base:              self.base,
+            has_dark_variants: self.has_dark_variants,
+        })
+    }
 }
 
 fn parse_manifest_sets(content: &str) -> Vec<IconSetProto> {
-    let mut sets = Vec::new();
-    let mut current: Option<IconSetBuilder> = None;
-
-    for line in content.lines() {
-        let line = line.trim();
-        if line == "[[set]]" {
-            if let Some(builder) = current.take() {
-                if let Some(set) = builder.build() {
-                    sets.push(set);
-                }
-            }
-            current = Some(IconSetBuilder::default());
-            continue;
-        }
-        if let Some(ref mut builder) = current {
-            if let Some(val) = kv(line, "id") {
-                builder.id = val;
-            } else if let Some(val) = kv(line, "name") {
-                builder.name = val;
-            } else if let Some(val) = kv(line, "description") {
-                builder.description = val;
-            } else if let Some(val) = kv(line, "has_dark_variants") {
-                builder.has_dark_variants = val == "true";
-            } else if let Some(val) = kv(line, "source_repo_id").or_else(|| kv(line, "source")) {
-                builder.source_repo_id = val;
-            } else if let Some(val) = kv(line, "builtin") {
-                builder.builtin = val == "true";
-            }
-        }
-    }
-    if let Some(builder) = current {
-        if let Some(set) = builder.build() {
-            sets.push(set);
-        }
-    }
-    sets
-}
-
-fn kv(line: &str, key: &str) -> Option<String> {
-    // Split on first '=' to handle any amount of whitespace around it.
-    let (lhs, rhs) = line.split_once('=')?;
-    if lhs.trim() != key {
-        return None;
-    }
-    Some(rhs.trim().trim_matches('"').to_string())
-}
-
-#[derive(Default)]
-struct IconSetBuilder {
-    id: String,
-    name: String,
-    description: String,
-    has_dark_variants: bool,
-    source_repo_id: String,
-    builtin: bool,
-}
-
-impl IconSetBuilder {
-    fn build(self) -> Option<IconSetProto> {
-        if self.id.is_empty() {
-            return None;
-        }
-        Some(IconSetProto {
-            id: self.id,
-            name: self.name,
-            description: self.description,
-            has_dark_variants: self.has_dark_variants,
-            source_repo_id: self.source_repo_id,
-            builtin: self.builtin,
-        })
-    }
+    parse_manifest_sections::<IconSetBuilder>(content, "[[set]]")
 }
 
 // ── Errors ────────────────────────────────────────────────────────────────────

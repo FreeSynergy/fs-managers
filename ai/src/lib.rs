@@ -44,6 +44,34 @@ impl EngineStatus {
     }
 }
 
+// ── ModelSpec ─────────────────────────────────────────────────────────────────
+
+/// Static data record for one predefined LLM model.
+///
+/// Adding a new model means adding one entry to [`CATALOGUE`] — no other
+/// code needs to change.
+pub struct ModelSpec {
+    /// Hugging Face model ID, e.g. `"Qwen/Qwen3-4B"`.
+    pub hf_id:        &'static str,
+    /// Human-readable name shown in UI pickers.
+    pub display_name: &'static str,
+    /// Estimated RAM in GB after ISQ Q4K quantization.
+    pub ram_gb:       f32,
+    /// Factory: construct the matching [`LlmModel`] variant.
+    make:             fn() -> LlmModel,
+}
+
+/// All built-in models. Order determines `all_predefined()` output.
+///
+/// To add a new model: add one row here + one variant to `LlmModel` + one arm
+/// in `spec()`.  Everything else (display_name, ram_gb, from_hf_id, …) is
+/// driven automatically from this table.
+const CATALOGUE: &[ModelSpec] = &[
+    ModelSpec { hf_id: "Qwen/Qwen3-4B",         display_name: "Qwen3-4B  (~3.5 GB RAM, fast)",               ram_gb: 3.5, make: || LlmModel::Qwen3_4B },
+    ModelSpec { hf_id: "Qwen/Qwen3-8B",         display_name: "Qwen3-8B  (~6 GB RAM, better quality)",       ram_gb: 6.0, make: || LlmModel::Qwen3_8B },
+    ModelSpec { hf_id: "Qwen/Qwen2.5-Coder-7B", display_name: "Qwen2.5-Coder-7B  (~5 GB RAM, code-focused)", ram_gb: 5.0, make: || LlmModel::Qwen25Coder7B },
+];
+
 // ── LlmModel ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -55,45 +83,49 @@ pub enum LlmModel {
 }
 
 impl LlmModel {
-    pub fn hf_id(&self) -> &str {
+    /// Look up the static [`ModelSpec`] for predefined variants.
+    ///
+    /// This is the single match block that drives all other methods.
+    /// Custom models return `None`.
+    fn spec(&self) -> Option<&'static ModelSpec> {
         match self {
-            Self::Qwen3_4B      => "Qwen/Qwen3-4B",
-            Self::Qwen3_8B      => "Qwen/Qwen3-8B",
-            Self::Qwen25Coder7B => "Qwen/Qwen2.5-Coder-7B",
-            Self::Custom(id)    => id.as_str(),
+            Self::Qwen3_4B      => Some(&CATALOGUE[0]),
+            Self::Qwen3_8B      => Some(&CATALOGUE[1]),
+            Self::Qwen25Coder7B => Some(&CATALOGUE[2]),
+            Self::Custom(_)     => None,
         }
     }
 
+    /// Hugging Face model ID (e.g. `"Qwen/Qwen3-4B"`).
+    pub fn hf_id(&self) -> &str {
+        self.spec().map_or_else(
+            || if let Self::Custom(id) = self { id.as_str() } else { unreachable!() },
+            |s| s.hf_id,
+        )
+    }
+
+    /// Human-readable name for UI pickers.
     pub fn display_name(&self) -> &str {
-        match self {
-            Self::Qwen3_4B      => "Qwen3-4B  (~3.5 GB RAM, fast)",
-            Self::Qwen3_8B      => "Qwen3-8B  (~6 GB RAM, better quality)",
-            Self::Qwen25Coder7B => "Qwen2.5-Coder-7B  (~5 GB RAM, code-focused)",
-            Self::Custom(_)     => "Custom model",
-        }
+        self.spec().map_or("Custom model", |s| s.display_name)
     }
 
     /// Estimated RAM in GB after ISQ Q4K quantization.
     pub fn ram_gb(&self) -> f32 {
-        match self {
-            Self::Qwen3_4B      => 3.5,
-            Self::Qwen3_8B      => 6.0,
-            Self::Qwen25Coder7B => 5.0,
-            Self::Custom(_)     => 0.0,
-        }
+        self.spec().map_or(0.0, |s| s.ram_gb)
     }
 
-    pub fn all_predefined() -> &'static [LlmModel] {
-        &[Self::Qwen3_4B, Self::Qwen3_8B, Self::Qwen25Coder7B]
+    /// All predefined (non-custom) models in catalogue order.
+    pub fn all_predefined() -> impl Iterator<Item = LlmModel> {
+        CATALOGUE.iter().map(|s| (s.make)())
     }
 
+    /// Construct from a Hugging Face ID; falls back to `Custom`.
     pub fn from_hf_id(id: &str) -> Self {
-        match id {
-            "Qwen/Qwen3-4B"          => Self::Qwen3_4B,
-            "Qwen/Qwen3-8B"          => Self::Qwen3_8B,
-            "Qwen/Qwen2.5-Coder-7B"  => Self::Qwen25Coder7B,
-            other                    => Self::Custom(other.into()),
-        }
+        CATALOGUE
+            .iter()
+            .find(|s| s.hf_id == id)
+            .map(|s| (s.make)())
+            .unwrap_or_else(|| Self::Custom(id.into()))
     }
 }
 

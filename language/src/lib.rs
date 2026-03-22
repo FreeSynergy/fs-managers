@@ -13,6 +13,7 @@ pub mod git_contributor;
 
 pub use git_contributor::{ContributorStatus, GitContributorCheck};
 
+use fs_core::{FsManager, SelectableManager};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -28,13 +29,49 @@ pub struct Language {
 
 impl Language {
     /// Returns the inline SVG flag for this language, or an empty string if unknown.
+    ///
+    /// SVG data is embedded at compile time from `flags/<lang>.svg` via `include_str!`.
+    /// To add a new flag: create `flags/<lang_id>.svg` and add an entry to `FLAG_REGISTRY`.
     pub fn flag_svg(&self) -> &'static str {
-        match self.id.as_str() {
-            "en" => r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 36" width="24" height="14"><rect width="60" height="36" fill="#012169"/><line x1="0" y1="0" x2="60" y2="36" stroke="#FFFFFF" stroke-width="12"/><line x1="60" y1="0" x2="0" y2="36" stroke="#FFFFFF" stroke-width="12"/><line x1="0" y1="0" x2="60" y2="36" stroke="#C8102E" stroke-width="6"/><line x1="60" y1="0" x2="0" y2="36" stroke="#C8102E" stroke-width="6"/><rect x="24" y="0" width="12" height="36" fill="#FFFFFF"/><rect x="0" y="12" width="60" height="12" fill="#FFFFFF"/><rect x="26" y="0" width="8" height="36" fill="#C8102E"/><rect x="0" y="14" width="60" height="8" fill="#C8102E"/></svg>"##,
-            "de" => r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 5 3" width="24" height="14"><rect width="5" height="1" fill="#000000"/><rect y="1" width="5" height="1" fill="#DD0000"/><rect y="2" width="5" height="1" fill="#FFCE00"/></svg>"##,
-            _ => "",
-        }
+        flag_registry().get(self.id.as_str()).copied().unwrap_or("")
     }
+}
+
+// ── Flag Registry ─────────────────────────────────────────────────────────────
+
+/// Returns the static map of language id → inline SVG flag.
+///
+/// Each SVG is embedded at compile time. Adding a new language flag requires
+/// only a new file in `flags/` and a new entry here — no logic changes.
+fn flag_registry() -> &'static std::collections::HashMap<&'static str, &'static str> {
+    static REGISTRY: std::sync::OnceLock<std::collections::HashMap<&'static str, &'static str>> =
+        std::sync::OnceLock::new();
+
+    REGISTRY.get_or_init(|| {
+        let mut m = std::collections::HashMap::new();
+        m.insert("en", include_str!("../flags/en.svg").trim());
+        m.insert("de", include_str!("../flags/de.svg").trim());
+        m
+    })
+}
+
+// ── FormatVariant ─────────────────────────────────────────────────────────────
+
+/// Common interface for locale format enums (date, time, number).
+///
+/// Implemented by [`DateFormat`], [`TimeFormat`], and [`NumberFormat`] so that
+/// UI pickers and iterators can handle all three uniformly.
+pub trait FormatVariant: Sized + 'static {
+    /// Short label shown in the settings UI, e.g. `"DD.MM.YYYY"`.
+    fn label(&self) -> &'static str;
+
+    /// Example value rendered with this format, e.g. `"19.03.2026"`.
+    ///
+    /// Returns an empty string if the format has no meaningful example.
+    fn example(&self) -> &'static str { "" }
+
+    /// All available variants in display order.
+    fn all() -> &'static [Self];
 }
 
 // ── DateFormat ────────────────────────────────────────────────────────────────
@@ -51,8 +88,8 @@ pub enum DateFormat {
     Ymd,
 }
 
-impl DateFormat {
-    pub fn label(&self) -> &'static str {
+impl FormatVariant for DateFormat {
+    fn label(&self) -> &'static str {
         match self {
             Self::DmY => "DD.MM.YYYY",
             Self::MdY => "MM/DD/YYYY",
@@ -60,7 +97,7 @@ impl DateFormat {
         }
     }
 
-    pub fn example(&self) -> &'static str {
+    fn example(&self) -> &'static str {
         match self {
             Self::DmY => "19.03.2026",
             Self::MdY => "03/19/2026",
@@ -68,8 +105,19 @@ impl DateFormat {
         }
     }
 
-    pub fn all() -> &'static [DateFormat] {
+    fn all() -> &'static [DateFormat] {
         &[Self::DmY, Self::MdY, Self::Ymd]
+    }
+}
+
+impl DateFormat {
+    /// Formats a date according to this format variant.
+    pub fn format(&self, year: i32, month: u32, day: u32) -> String {
+        match self {
+            Self::DmY => format!("{:02}.{:02}.{}", day, month, year),
+            Self::MdY => format!("{:02}/{:02}/{}", month, day, year),
+            Self::Ymd => format!("{}-{:02}-{:02}", year, month, day),
+        }
     }
 }
 
@@ -85,11 +133,40 @@ pub enum TimeFormat {
     H12,
 }
 
-impl TimeFormat {
-    pub fn label(&self) -> &'static str {
+impl FormatVariant for TimeFormat {
+    fn label(&self) -> &'static str {
         match self {
             Self::H24 => "24h  (14:30)",
             Self::H12 => "12h  (2:30 PM)",
+        }
+    }
+
+    fn example(&self) -> &'static str {
+        match self {
+            Self::H24 => "14:30",
+            Self::H12 => "2:30 PM",
+        }
+    }
+
+    fn all() -> &'static [TimeFormat] {
+        &[Self::H24, Self::H12]
+    }
+}
+
+impl TimeFormat {
+    /// Formats an hour/minute pair according to this format variant.
+    pub fn format(&self, hour: u32, minute: u32) -> String {
+        match self {
+            Self::H24 => format!("{:02}:{:02}", hour, minute),
+            Self::H12 => {
+                let (h, ampm) = match hour {
+                    0       => (12, "AM"),
+                    1..=11  => (hour, "AM"),
+                    12      => (12, "PM"),
+                    _       => (hour - 12, "PM"),
+                };
+                format!("{:02}:{:02} {}", h, minute, ampm)
+            }
         }
     }
 }
@@ -108,8 +185,8 @@ pub enum NumberFormat {
     SpaceComma,
 }
 
-impl NumberFormat {
-    pub fn label(&self) -> &'static str {
+impl FormatVariant for NumberFormat {
+    fn label(&self) -> &'static str {
         match self {
             Self::EuropeDot  => "1.234,56",
             Self::UsComma    => "1,234.56",
@@ -117,8 +194,52 @@ impl NumberFormat {
         }
     }
 
-    pub fn all() -> &'static [NumberFormat] {
+    fn example(&self) -> &'static str { self.label() }
+
+    fn all() -> &'static [NumberFormat] {
         &[Self::EuropeDot, Self::UsComma, Self::SpaceComma]
+    }
+}
+
+impl NumberFormat {
+    /// Returns the thousands separator character for this format.
+    fn thousands_sep(&self) -> char {
+        match self {
+            Self::EuropeDot  => '.',
+            Self::UsComma    => ',',
+            Self::SpaceComma => ' ',
+        }
+    }
+
+    /// Returns the decimal separator character for this format.
+    fn decimal_sep(&self) -> char {
+        match self {
+            Self::EuropeDot  => ',',
+            Self::UsComma    => '.',
+            Self::SpaceComma => ',',
+        }
+    }
+
+    /// Formats an integer with thousands separators.
+    pub fn format_integer(&self, value: i64) -> String {
+        let abs_str = value.unsigned_abs().to_string();
+        let grouped = group_thousands(&abs_str, self.thousands_sep());
+        if value < 0 { format!("-{}", grouped) } else { grouped }
+    }
+
+    /// Formats a float with thousands and decimal separators.
+    pub fn format_decimal(&self, value: f64, decimal_places: usize) -> String {
+        let raw = format!("{:.prec$}", value.abs(), prec = decimal_places);
+        let mut parts = raw.splitn(2, '.');
+        let int_part = parts.next().unwrap_or("0");
+        let dec_part = parts.next().unwrap_or("");
+        let grouped = group_thousands(int_part, self.thousands_sep());
+        let sign = if value < 0.0 { "-" } else { "" };
+        if decimal_places > 0 {
+            format!("{}{}{}{}", sign, grouped, self.decimal_sep(), dec_part)
+        } else {
+            format!("{}{}", sign, grouped)
+        }
     }
 }
 
@@ -206,87 +327,23 @@ pub struct ResolvedLocaleSettings {
 
 impl ResolvedLocaleSettings {
     /// Formats year/month/day according to the user's date format preference.
-    ///
-    /// # Example
-    /// ```
-    /// // DateFormat::DmY  → "20.03.2026"
-    /// // DateFormat::MdY  → "03/20/2026"
-    /// // DateFormat::Ymd  → "2026-03-20"
-    /// ```
     pub fn format_date(&self, year: i32, month: u32, day: u32) -> String {
-        match self.date_format {
-            DateFormat::DmY  => format!("{:02}.{:02}.{}", day, month, year),
-            DateFormat::MdY  => format!("{:02}/{:02}/{}", month, day, year),
-            DateFormat::Ymd  => format!("{}-{:02}-{:02}", year, month, day),
-        }
+        self.date_format.format(year, month, day)
     }
 
     /// Formats hour/minute according to the user's time format preference.
-    ///
-    /// # Example
-    /// ```
-    /// // TimeFormat::H24  → "14:05"
-    /// // TimeFormat::H12  → "02:05 PM"
-    /// ```
     pub fn format_time(&self, hour: u32, minute: u32) -> String {
-        match self.time_format {
-            TimeFormat::H24 => format!("{:02}:{:02}", hour, minute),
-            TimeFormat::H12 => {
-                let (h, ampm) = match hour {
-                    0       => (12, "AM"),
-                    1..=11  => (hour, "AM"),
-                    12      => (12, "PM"),
-                    _       => (hour - 12, "PM"),
-                };
-                format!("{:02}:{:02} {}", h, minute, ampm)
-            }
-        }
+        self.time_format.format(hour, minute)
     }
 
     /// Formats an integer with thousands separators.
-    ///
-    /// # Example
-    /// ```
-    /// // NumberFormat::EuropeDot  → "1.234.567"
-    /// // NumberFormat::UsComma    → "1,234,567"
-    /// // NumberFormat::SpaceComma → "1 234 567"
-    /// ```
     pub fn format_integer(&self, value: i64) -> String {
-        let sep = match self.number_format {
-            NumberFormat::EuropeDot  => '.',
-            NumberFormat::UsComma    => ',',
-            NumberFormat::SpaceComma => ' ',
-        };
-        let abs_str = value.unsigned_abs().to_string();
-        let with_sep = group_thousands(&abs_str, sep);
-        if value < 0 { format!("-{}", with_sep) } else { with_sep }
+        self.number_format.format_integer(value)
     }
 
     /// Formats a float with thousands and decimal separators.
-    ///
-    /// # Example
-    /// ```
-    /// // NumberFormat::EuropeDot  → "1.234,56"
-    /// // NumberFormat::UsComma    → "1,234.56"
-    /// // NumberFormat::SpaceComma → "1 234,56"
-    /// ```
     pub fn format_decimal(&self, value: f64, decimal_places: usize) -> String {
-        let (thousands, decimal) = match self.number_format {
-            NumberFormat::EuropeDot  => ('.', ','),
-            NumberFormat::UsComma    => (',', '.'),
-            NumberFormat::SpaceComma => (' ', ','),
-        };
-        let raw = format!("{:.prec$}", value.abs(), prec = decimal_places);
-        let mut parts = raw.splitn(2, '.');
-        let int_part = parts.next().unwrap_or("0");
-        let dec_part = parts.next().unwrap_or("");
-        let grouped = group_thousands(int_part, thousands);
-        let sign = if value < 0.0 { "-" } else { "" };
-        if decimal_places > 0 {
-            format!("{}{}{}{}", sign, grouped, decimal, dec_part)
-        } else {
-            format!("{}{}", sign, grouped)
-        }
+        self.number_format.format_decimal(value, decimal_places)
     }
 }
 
@@ -385,12 +442,12 @@ impl LanguageManager {
     pub fn set_active(&self, id: &str) -> Result<(), LanguageError> {
         let mut inv = LocaleSettings::load_inventory();
         inv.language = Some(id.to_string());
-        inv.save_inventory().map_err(LanguageError::StoreError)
+        inv.save_inventory().map_err(fs_core::ManagerError::StoreError)
     }
 
     /// Saves updated Inventory settings (partial update — only provided fields are stored).
     pub fn save_settings(&self, settings: LocaleSettings) -> Result<(), LanguageError> {
-        settings.save_inventory().map_err(LanguageError::StoreError)
+        settings.save_inventory().map_err(fs_core::ManagerError::StoreError)
     }
 }
 
@@ -398,23 +455,21 @@ impl Default for LanguageManager {
     fn default() -> Self { Self::new() }
 }
 
+impl SelectableManager for LanguageManager {
+    type Item  = Language;
+    type Error = LanguageError;
+
+    fn active(&self)               -> Language         { LanguageManager::active(self) }
+    fn available(&self)            -> Vec<Language>    { LanguageManager::available(self) }
+    fn set_active(&self, id: &str) -> Result<(), LanguageError> { LanguageManager::set_active(self, id) }
+}
+
+impl FsManager for LanguageManager {
+    fn id(&self)   -> &str { "language" }
+    fn name(&self) -> &str { "Language Manager" }
+}
+
 // ── LanguageError ─────────────────────────────────────────────────────────────
 
-#[derive(Debug)]
-pub enum LanguageError {
-    NotFound(String),
-    PermissionDenied,
-    StoreError(String),
-}
-
-impl std::fmt::Display for LanguageError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NotFound(id)    => write!(f, "Language not found: {id}"),
-            Self::PermissionDenied => write!(f, "Permission denied: cannot set language"),
-            Self::StoreError(msg) => write!(f, "Store error: {msg}"),
-        }
-    }
-}
-
-impl std::error::Error for LanguageError {}
+/// Error type for the Language Manager — alias of the shared [`fs_core::ManagerError`].
+pub type LanguageError = fs_core::ManagerError;

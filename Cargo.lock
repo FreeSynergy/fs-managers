@@ -583,8 +583,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs-manager-container-app"
+name = "fs-manager-container"
 version = "0.1.0"
+dependencies = [
+ "fs-core",
+]
 
 [[package]]
 name = "fs-manager-cursor"
@@ -604,6 +607,7 @@ dependencies = [
 name = "fs-manager-language"
 version = "0.1.0"
 dependencies = [
+ "fs-core",
  "gix",
  "serde",
  "toml",
@@ -612,6 +616,9 @@ dependencies = [
 [[package]]
 name = "fs-manager-theme"
 version = "0.1.0"
+dependencies = [
+ "fs-core",
+]
 
 [[package]]
 name = "fs_extra"

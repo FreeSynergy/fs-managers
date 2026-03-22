@@ -16,7 +16,7 @@
 
 use std::path::{Path, PathBuf};
 
-use fs_core::{Repository, RepositoryManager};
+use fs_core::{FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase, parse_manifest_sections};
 pub use fs_core::RepositoryError;
 
 // ── CursorRepository ──────────────────────────────────────────────────────────
@@ -267,6 +267,60 @@ impl CursorSetDraft {
             .filter(|s| !filled.contains(s))
             .collect()
     }
+
+    /// Renders the `manifest.toml` content for this draft.
+    ///
+    /// The rendered string is written to `<set_dir>/manifest.toml` by
+    /// [`CursorManager::save_draft`].
+    pub fn render_manifest(&self, source_repo_id: &str) -> String {
+        let mut out = String::new();
+
+        out.push_str(&format!("id          = \"{}\"\n", self.id));
+        out.push_str(&format!("name        = \"{}\"\n", self.name));
+        out.push_str(&format!("description = \"{}\"\n", self.description));
+        out.push_str(&format!("author      = \"{}\"\n", self.author));
+        out.push_str(&format!("version     = \"{}\"\n", self.version));
+        out.push_str(&format!("source_repo_id = \"{source_repo_id}\"\n"));
+        out.push_str("builtin     = false\n");
+
+        let non_default_hotspots: Vec<_> = self
+            .hotspot_overrides
+            .iter()
+            .filter(|(slot, hs)| *hs != slot.default_hotspot())
+            .collect();
+
+        if !non_default_hotspots.is_empty() {
+            out.push_str("\n[hotspots]\n");
+            for (slot, (x, y)) in &non_default_hotspots {
+                out.push_str(&format!("{} = [{x}, {y}]\n", slot.filename()));
+            }
+        }
+
+        for (slot, anim) in &self.animations {
+            out.push_str(&format!("\n[animated.{}]\n", slot.filename()));
+
+            let frame_filenames: Vec<String> = (1..=anim.frames.len())
+                .map(|i| format!("{}-frame-{i}.svg", slot.filename()))
+                .collect();
+            let frames_toml = frame_filenames
+                .iter()
+                .map(|f| format!("\"{f}\""))
+                .collect::<Vec<_>>()
+                .join(", ");
+            out.push_str(&format!("frames   = [{frames_toml}]\n"));
+
+            let ms_toml = anim
+                .frame_ms
+                .iter()
+                .map(|ms| ms.to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+            out.push_str(&format!("frame_ms = [{ms_toml}]\n"));
+            out.push_str(&format!("loop     = {}\n", anim.loop_animation));
+        }
+
+        out
+    }
 }
 
 // ── CursorManager ─────────────────────────────────────────────────────────────
@@ -280,29 +334,29 @@ impl CursorSetDraft {
 /// `RepositoryManager<CursorRepository>` from `fs-core`.
 pub struct CursorManager {
     /// Root directory that contains the `cursor-sets/` subdirectory.
-    icons_root: PathBuf,
+    cursor_root: PathBuf,
     pub repositories: RepositoryManager<CursorRepository>,
 }
 
 impl CursorManager {
     pub fn new(
-        icons_root: impl Into<PathBuf>,
+        cursor_root: impl Into<PathBuf>,
         repositories: Vec<CursorRepository>,
     ) -> Self {
         Self {
-            icons_root: icons_root.into(),
+            cursor_root: cursor_root.into(),
             repositories: RepositoryManager::new(repositories),
         }
     }
 
     /// Path to the cursor-sets directory.
     fn cursor_sets_dir(&self) -> PathBuf {
-        self.icons_root.join("cursor-sets")
+        self.cursor_root.join("cursor-sets")
     }
 
     /// Returns all installed cursor sets.
     pub fn sets(&self) -> Vec<CursorSet> {
-        let manifest_path = self.icons_root.join("manifest.toml");
+        let manifest_path = self.cursor_root.join("manifest.toml");
         let content = match std::fs::read_to_string(&manifest_path) {
             Ok(c) => c,
             Err(_) => return vec![],
@@ -311,16 +365,16 @@ impl CursorManager {
         parse_manifest_cursor_sets(&content)
             .into_iter()
             .map(|proto| {
-                let path = self.cursor_sets_dir().join(&proto.id);
+                let path = self.cursor_sets_dir().join(&proto.base.id);
                 let present_slots = detect_present_slots(&path);
                 CursorSet {
-                    id: proto.id,
-                    name: proto.name,
-                    description: proto.description,
-                    author: proto.author,
-                    version: proto.version,
-                    source_repo_id: proto.source_repo_id,
-                    builtin: proto.builtin,
+                    id:             proto.base.id,
+                    name:           proto.base.name,
+                    description:    proto.base.description,
+                    author:         proto.author,
+                    version:        proto.version,
+                    source_repo_id: proto.base.source_repo_id,
+                    builtin:        proto.base.builtin,
                     path,
                     present_slots,
                 }
@@ -391,12 +445,17 @@ impl CursorManager {
         }
 
         // Generate manifest.toml.
-        let manifest = generate_manifest(draft, source_repo_id);
+        let manifest = draft.render_manifest(source_repo_id);
         std::fs::write(set_dir.join("manifest.toml"), manifest)
             .map_err(|e| CursorError::IoError(e.to_string()))?;
 
         Ok(set_dir)
     }
+}
+
+impl FsManager for CursorManager {
+    fn id(&self)   -> &str { "cursor" }
+    fn name(&self) -> &str { "Cursor Manager" }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -515,144 +574,49 @@ fn parse_toml_u32_array(s: &str) -> Vec<u32> {
         .collect()
 }
 
-/// Generates the manifest.toml content for a cursor set draft.
-fn generate_manifest(draft: &CursorSetDraft, source_repo_id: &str) -> String {
-    let mut out = String::new();
+// ── Manifest parser ───────────────────────────────────────────────────────────
 
-    out.push_str(&format!("id          = \"{}\"\n", draft.id));
-    out.push_str(&format!("name        = \"{}\"\n", draft.name));
-    out.push_str(&format!("description = \"{}\"\n", draft.description));
-    out.push_str(&format!("author      = \"{}\"\n", draft.author));
-    out.push_str(&format!("version     = \"{}\"\n", draft.version));
-    out.push_str(&format!("source_repo_id = \"{source_repo_id}\"\n"));
-    out.push_str("builtin     = false\n");
+/// Parsed proto for one cursor set section — common fields via [`SetBase`],
+/// cursor-specific extras (`author`, `version`) appended.
+struct CursorSetProto {
+    base:    SetBase,
+    author:  String,
+    version: String,
+}
 
-    // Hotspot overrides (only those that differ from the slot default).
-    let non_default_hotspots: Vec<_> = draft
-        .hotspot_overrides
-        .iter()
-        .filter(|(slot, hs)| *hs != slot.default_hotspot())
-        .collect();
+/// Builder that implements the shared [`ManifestBuilder`] contract.
+///
+/// Handles cursor-specific fields (`author`, `version`) and delegates
+/// all common fields to [`SetBase::apply_field`].
+#[derive(Default)]
+struct CursorSetBuilder {
+    base:    SetBase,
+    author:  String,
+    version: String,
+}
 
-    if !non_default_hotspots.is_empty() {
-        out.push_str("\n[hotspots]\n");
-        for (slot, (x, y)) in &non_default_hotspots {
-            out.push_str(&format!("{} = [{x}, {y}]\n", slot.filename()));
+impl ManifestBuilder for CursorSetBuilder {
+    type Output = CursorSetProto;
+
+    fn apply_field(&mut self, key: &str, val: String) {
+        match key {
+            "author"  => self.author  = val,
+            "version" => self.version = val,
+            _         => { self.base.apply_field(key, val); }
         }
     }
 
-    // Animation sections.
-    for (slot, anim) in &draft.animations {
-        out.push_str(&format!("\n[animated.{}]\n", slot.filename()));
-
-        let frame_filenames: Vec<String> = (1..=anim.frames.len())
-            .map(|i| format!("{}-frame-{i}.svg", slot.filename()))
-            .collect();
-        let frames_toml = frame_filenames
-            .iter()
-            .map(|f| format!("\"{f}\""))
-            .collect::<Vec<_>>()
-            .join(", ");
-        out.push_str(&format!("frames   = [{frames_toml}]\n"));
-
-        let ms_toml = anim
-            .frame_ms
-            .iter()
-            .map(|ms| ms.to_string())
-            .collect::<Vec<_>>()
-            .join(", ");
-        out.push_str(&format!("frame_ms = [{ms_toml}]\n"));
-        out.push_str(&format!("loop     = {}\n", anim.loop_animation));
+    fn build(self) -> Option<CursorSetProto> {
+        self.base.is_valid().then(|| CursorSetProto {
+            base:    self.base,
+            author:  self.author,
+            version: self.version,
+        })
     }
-
-    out
-}
-
-// ── Manifest parser ───────────────────────────────────────────────────────────
-
-struct CursorSetProto {
-    id: String,
-    name: String,
-    description: String,
-    author: String,
-    version: String,
-    source_repo_id: String,
-    builtin: bool,
 }
 
 fn parse_manifest_cursor_sets(content: &str) -> Vec<CursorSetProto> {
-    let mut sets = Vec::new();
-    let mut current: Option<CursorSetBuilder> = None;
-
-    for line in content.lines() {
-        let line = line.trim();
-        if line == "[[cursor_set]]" {
-            if let Some(builder) = current.take() {
-                if let Some(set) = builder.build() {
-                    sets.push(set);
-                }
-            }
-            current = Some(CursorSetBuilder::default());
-            continue;
-        }
-        if let Some(ref mut builder) = current {
-            if let Some(val) = kv(line, "id") {
-                builder.id = val;
-            } else if let Some(val) = kv(line, "name") {
-                builder.name = val;
-            } else if let Some(val) = kv(line, "description") {
-                builder.description = val;
-            } else if let Some(val) = kv(line, "author") {
-                builder.author = val;
-            } else if let Some(val) = kv(line, "version") {
-                builder.version = val;
-            } else if let Some(val) = kv(line, "source_repo_id") {
-                builder.source_repo_id = val;
-            } else if let Some(val) = kv(line, "builtin") {
-                builder.builtin = val == "true";
-            }
-        }
-    }
-    if let Some(builder) = current {
-        if let Some(set) = builder.build() {
-            sets.push(set);
-        }
-    }
-    sets
-}
-
-fn kv(line: &str, key: &str) -> Option<String> {
-    let prefix = format!("{key} =");
-    let rest = line.strip_prefix(&prefix)?.trim();
-    Some(rest.trim_matches('"').to_string())
-}
-
-#[derive(Default)]
-struct CursorSetBuilder {
-    id: String,
-    name: String,
-    description: String,
-    author: String,
-    version: String,
-    source_repo_id: String,
-    builtin: bool,
-}
-
-impl CursorSetBuilder {
-    fn build(self) -> Option<CursorSetProto> {
-        if self.id.is_empty() {
-            return None;
-        }
-        Some(CursorSetProto {
-            id: self.id,
-            name: self.name,
-            description: self.description,
-            author: self.author,
-            version: self.version,
-            source_repo_id: self.source_repo_id,
-            builtin: self.builtin,
-        })
-    }
+    parse_manifest_sections::<CursorSetBuilder>(content, "[[cursor_set]]")
 }
 
 // ── Errors ────────────────────────────────────────────────────────────────────
