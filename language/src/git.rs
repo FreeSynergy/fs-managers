@@ -6,6 +6,8 @@
 
 use std::path::Path;
 
+use gix::bstr::ByteSlice;
+
 // ── Domain types ──────────────────────────────────────────────────────────────
 
 /// Opaque object identifier (raw hash bytes, SHA-1 or SHA-256).
@@ -168,32 +170,44 @@ impl GitRepoPort for GixRepo {
         tree:    OidBytes,
         parent:  OidBytes,
     ) -> Result<OidBytes, GitError> {
-        let sig = gix::actor::Signature {
-            name:  gix::bstr::BString::from(author.name.as_str()),
-            email: gix::bstr::BString::from(author.email.as_str()),
-            time:  gix::date::Time::now_local_or_utc(),
+        let time   = gix::date::Time::now_local_or_utc();
+        let offset = time.offset.unsigned_abs();
+        let time_str = format!(
+            "{} {}{:02}{:02}",
+            time.seconds,
+            if time.offset >= 0 { '+' } else { '-' },
+            offset / 3600,
+            (offset % 3600) / 60,
+        );
+        let sig_ref = gix::actor::SignatureRef {
+            name:  gix::bstr::BStr::new(author.name.as_bytes()),
+            email: gix::bstr::BStr::new(author.email.as_bytes()),
+            time:  &time_str,
         };
         self.inner
-            .commit_as(&sig, &sig, "HEAD", message, tree.to_gix()?, [parent.to_gix()?])
-            .map(OidBytes::from_gix)
+            .commit_as(sig_ref, sig_ref, "HEAD", message, tree.to_gix()?, [parent.to_gix()?])
+            .map(|id| OidBytes::from_gix(id.detach()))
             .map_err(|e| GitError::Commit(e.to_string()))
     }
 
     fn push_to_origin(&self, refspec: &str) -> Result<(), GitError> {
-        // gix 0.65+: prepare_push no longer takes a callback parameter.
-        let remote = self.inner
-            .find_remote("origin")
+        // gix push API changed significantly in 0.80; delegate to the git CLI to stay stable.
+        let workdir = self.inner
+            .workdir()
+            .ok_or_else(|| GitError::Push("bare repository has no work dir".into()))?;
+
+        let status = std::process::Command::new("git")
+            .arg("-C")
+            .arg(workdir)
+            .arg("push")
+            .arg("origin")
+            .arg(refspec)
+            .status()
             .map_err(|e| GitError::Push(e.to_string()))?;
 
-        remote
-            .connect(gix::remote::Direction::Push)
-            .map_err(|e| GitError::Push(e.to_string()))?
-            .prepare_push(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
-            .map_err(|e| GitError::Push(e.to_string()))?
-            .with_refspecs([refspec], gix::remote::Direction::Push)
-            .map_err(|e| GitError::Push(e.to_string()))?
-            .send(gix::progress::Discard, &gix::interrupt::IS_INTERRUPTED)
-            .map_err(|e| GitError::Push(e.to_string()))?;
+        if !status.success() {
+            return Err(GitError::Push(format!("git push exited with {status}")));
+        }
 
         Ok(())
     }
