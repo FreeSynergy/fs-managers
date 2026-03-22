@@ -1,12 +1,12 @@
 [package]
-name = "fsn-manager-icons"
+name = "fs-manager-icons"
 version = "0.1.0"
 edition = "2021"
 description = "FreeSynergy Icon Manager — knows available icon sets, provides icon picker component"
 
 [lib]
-name = "fsn_manager_icons"
+name = "fs_manager_icons"
 path = "src/lib.rs"
 
 [dependencies]
-fsn-core = { path = "../../fs-libs/fsn-core" }
+fs-core = { path = "../../fs-libs/fs-core" }

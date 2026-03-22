@@ -1,15 +1,15 @@
-// fsn-bot — BotManager CLI for FreeSynergy
+// fs-bot — BotManager CLI for FreeSynergy
 //
 // Commands:
-//   fsn-bot status                      — List all bot instances + status
-//   fsn-bot broadcast <message>         — Send broadcast via Bus
-//   fsn-bot gatekeeper list             — List pending join requests
-//   fsn-bot gatekeeper approve <id>     — Approve join request
-//   fsn-bot gatekeeper deny   <id>      — Deny join request
-//   fsn-bot log [--limit N]             — Show recent audit log entries
+//   fs-bot status                      — List all bot instances + status
+//   fs-bot broadcast <message>         — Send broadcast via Bus
+//   fs-bot gatekeeper list             — List pending join requests
+//   fs-bot gatekeeper approve <id>     — Approve join request
+//   fs-bot gatekeeper deny   <id>      — Deny join request
+//   fs-bot log [--limit N]             — Show recent audit log entries
 //
 // The CLI reads from the running bot instance's SQLite DB.
-// DB path: $FSN_BOT_DB or $HOME/.local/share/fsn/bots/main/fsn-botmanager.db
+// DB path: $FS_BOT_DB or $HOME/.local/share/fsn/bots/main/fs-botmanager.db
 
 use anyhow::{bail, Context, Result};
 
@@ -37,24 +37,24 @@ async fn main() -> Result<()> {
         }
         _ => {
             eprintln!("Usage:");
-            eprintln!("  fsn-bot status");
-            eprintln!("  fsn-bot broadcast <message>");
-            eprintln!("  fsn-bot gatekeeper list");
-            eprintln!("  fsn-bot gatekeeper approve <id>");
-            eprintln!("  fsn-bot gatekeeper deny   <id>");
-            eprintln!("  fsn-bot log [--limit N]");
+            eprintln!("  fs-bot status");
+            eprintln!("  fs-bot broadcast <message>");
+            eprintln!("  fs-bot gatekeeper list");
+            eprintln!("  fs-bot gatekeeper approve <id>");
+            eprintln!("  fs-bot gatekeeper deny   <id>");
+            eprintln!("  fs-bot log [--limit N]");
             std::process::exit(1);
         }
     }
 }
 
 fn db_path() -> String {
-    if let Ok(p) = std::env::var("FSN_BOT_DB") { return p; }
+    if let Ok(p) = std::env::var("FS_BOT_DB") { return p; }
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
-    format!("{home}/.local/share/fsn/bots/main/fsn-botmanager.db")
+    format!("{home}/.local/share/fsn/bots/main/fs-botmanager.db")
 }
 
-async fn open_db() -> Result<sqlx::SqlitePool> {
+async fn open_db() -> Result<fs_db::DbConnection> {
     let path = db_path();
     db::connect(&path).await.with_context(|| format!("Cannot open bot DB at '{path}'"))
 }
@@ -113,7 +113,7 @@ async fn cmd_gk_list() -> Result<()> {
 async fn cmd_gk_resolve(id: i64, approve: bool) -> Result<()> {
     let action = if approve { "approved" } else { "denied" };
     // Open read-write for mutations
-    let rw_pool = db::connect_rw(&db_path()).await
+    let rw_pool = db::connect(&db_path()).await
         .with_context(|| format!("Cannot open bot DB at '{}' (rw)", db_path()))?;
     let ok = db::approve_request(&rw_pool, id, approve).await
         .with_context(|| format!("Failed to {action} request #{id}"))?;

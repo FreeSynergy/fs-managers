@@ -1,11 +1,11 @@
 [package]
-name = "fsn-manager-language"
+name = "fs-manager-language"
 version = "0.1.0"
 edition = "2021"
 description = "FreeSynergy Language Manager — locale settings (Store default + Inventory override), SSH contributor check"
 
 [lib]
-name = "fsn_manager_language"
+name = "fs_manager_language"
 path = "src/lib.rs"
 
 [dependencies]

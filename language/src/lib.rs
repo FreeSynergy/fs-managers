@@ -8,6 +8,7 @@
 // All programs that need locale info import this crate instead of managing
 // language state themselves.
 
+pub mod git;
 pub mod git_contributor;
 
 pub use git_contributor::{ContributorStatus, GitContributorCheck};
@@ -296,35 +297,35 @@ fn group_thousands(digits: &str, sep: char) -> String {
         .as_bytes()
         .rchunks(3)
         .rev()
-        .map(|c| std::str::from_utf8(c).unwrap())
+        .filter_map(|c| std::str::from_utf8(c).ok())
         .collect();
     groups.join(&sep_str)
 }
 
-// ── language_from_code ────────────────────────────────────────────────────────
-
-/// Constructs a `Language` from a language code, using known display names and locales.
-pub fn language_from_code(code: &str) -> Language {
-    let (display_name, locale) = match code {
-        "en" => ("English",    "en-US"),
-        "de" => ("Deutsch",    "de-DE"),
-        "fr" => ("Français",   "fr-FR"),
-        "es" => ("Español",    "es-ES"),
-        "it" => ("Italiano",   "it-IT"),
-        "pt" => ("Português",  "pt-PT"),
-        "nl" => ("Nederlands", "nl-NL"),
-        "pl" => ("Polski",     "pl-PL"),
-        "ru" => ("Русский",    "ru-RU"),
-        "ja" => ("日本語",     "ja-JP"),
-        "zh" => ("中文",       "zh-CN"),
-        "ko" => ("한국어",     "ko-KR"),
-        "ar" => ("العربية",   "ar-SA"),
-        other => (other, other),
-    };
-    Language {
-        id:           code.to_string(),
-        display_name: display_name.to_string(),
-        locale:       locale.to_string(),
+impl Language {
+    /// Constructs a `Language` from a language code, using known display names and locales.
+    pub fn from_code(code: &str) -> Language {
+        let (display_name, locale) = match code {
+            "en" => ("English",    "en-US"),
+            "de" => ("Deutsch",    "de-DE"),
+            "fr" => ("Français",   "fr-FR"),
+            "es" => ("Español",    "es-ES"),
+            "it" => ("Italiano",   "it-IT"),
+            "pt" => ("Português",  "pt-PT"),
+            "nl" => ("Nederlands", "nl-NL"),
+            "pl" => ("Polski",     "pl-PL"),
+            "ru" => ("Русский",    "ru-RU"),
+            "ja" => ("日本語",     "ja-JP"),
+            "zh" => ("中文",       "zh-CN"),
+            "ko" => ("한국어",     "ko-KR"),
+            "ar" => ("العربية",   "ar-SA"),
+            other => (other, other),
+        };
+        Language {
+            id:           code.to_string(),
+            display_name: display_name.to_string(),
+            locale:       locale.to_string(),
+        }
     }
 }
 
@@ -366,7 +367,7 @@ impl LanguageManager {
     /// Returns the currently active language.
     pub fn active(&self) -> Language {
         let code = self.effective_settings().language;
-        language_from_code(&code)
+        Language::from_code(&code)
     }
 
     /// Returns the built-in languages.
@@ -375,8 +376,8 @@ impl LanguageManager {
     /// This list covers only languages that are always available without installation.
     pub fn available(&self) -> Vec<Language> {
         vec![
-            language_from_code("en"),
-            language_from_code("de"),
+            Language::from_code("en"),
+            Language::from_code("de"),
         ]
     }
 

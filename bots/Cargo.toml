@@ -1,5 +1,5 @@
 [package]
-name        = "fsn-manager-bots"
+name        = "fs-manager-bots"
 description = "FreeSynergy Bot Manager — CLI for managing bot instances and modules"
 version     = "0.1.0"
 edition     = "2021"
@@ -7,13 +7,13 @@ license     = "MIT"
 authors     = ["FreeSynergy.Net"]
 
 [[bin]]
-name = "fsn-bot"
+name = "fs-bot"
 path = "src/main.rs"
 
 [dependencies]
 # Database (via internal FSN abstraction — no direct sqlx/sea-orm deps)
-fsn-db    = { path = "../../fs-libs/fsn-db", features = ["sqlite"] }
-fsn-error = { path = "../../fs-libs/fsn-error" }
+fs-db    = { path = "../../fs-libs/fs-db", features = ["sqlite"] }
+fs-error = { path = "../../fs-libs/fs-error" }
 tokio     = { version = "1", features = ["full"] }
 
 # Serialization

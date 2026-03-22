@@ -12,7 +12,11 @@
 //
 // Note: successful SSH auth means the key is known to GitHub.
 // Actual write access to a specific repo is validated on push (graceful error).
+//
+// push_translation uses GitRepoPort (implemented by GixRepo) for all git operations.
+// No gix imports here — if the gix API changes, only src/git.rs needs updating.
 
+use crate::git::{CommitAuthor, GitRepoPort, GixRepo};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -30,14 +34,32 @@ pub enum ContributorStatus {
     NotAuthenticated,
 }
 
+impl ContributorStatus {
+    /// Converts this status into a cache record for serialization.
+    fn to_cache(&self, checked_at_secs: u64) -> ContributorCache {
+        match self {
+            Self::Authenticated { github_user } => ContributorCache {
+                authenticated:   true,
+                github_user:     Some(github_user.clone()),
+                checked_at_secs,
+            },
+            _ => ContributorCache {
+                authenticated:   false,
+                github_user:     None,
+                checked_at_secs,
+            },
+        }
+    }
+}
+
 // ── Cache ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ContributorCache {
-    authenticated:    bool,
-    github_user:      Option<String>,
+    authenticated:   bool,
+    github_user:     Option<String>,
     /// Unix timestamp (seconds) when the check was last performed.
-    checked_at_secs:  u64,
+    checked_at_secs: u64,
 }
 
 // ── GitContributorCheck ───────────────────────────────────────────────────────
@@ -79,18 +101,7 @@ impl GitContributorCheck {
     }
 
     fn save_cache(status: &ContributorStatus) {
-        let cache = match status {
-            ContributorStatus::Authenticated { github_user } => ContributorCache {
-                authenticated:   true,
-                github_user:     Some(github_user.clone()),
-                checked_at_secs: Self::now_secs(),
-            },
-            _ => ContributorCache {
-                authenticated:   false,
-                github_user:     None,
-                checked_at_secs: Self::now_secs(),
-            },
-        };
+        let cache = status.to_cache(Self::now_secs());
         if let Ok(toml_str) = toml::to_string_pretty(&cache) {
             let path = Self::cache_path();
             if let Some(parent) = path.parent() {
@@ -134,7 +145,7 @@ impl GitContributorCheck {
                 "-T",
                 "-o", "StrictHostKeyChecking=no",
                 "-o", "ConnectTimeout=8",
-                "-o", "BatchMode=yes",       // never prompt for passphrase
+                "-o", "BatchMode=yes", // never prompt for passphrase
                 "git@github.com",
             ])
             .output();
@@ -175,36 +186,62 @@ impl GitContributorCheck {
     ///   - Write access to `git@github.com:FreeSynergy/Node.git`
     ///
     /// The file is written to `Node/i18n/{lang_code}/ui.toml` within the clone,
-    /// then committed and pushed.
+    /// then committed and pushed via `GitRepoPort` (backed by `GixRepo`).
     pub fn push_translation(
-        repo_path: &std::path::Path,
-        lang_code: &str,
+        repo_path:    &std::path::Path,
+        lang_code:    &str,
         toml_content: &str,
     ) -> Result<String, String> {
-        // Write the file
-        let dest_dir = repo_path.join("Node").join("i18n").join(lang_code);
-        std::fs::create_dir_all(&dest_dir).map_err(|e| e.to_string())?;
-        let dest_file = dest_dir.join("ui.toml");
-        std::fs::write(&dest_file, toml_content).map_err(|e| e.to_string())?;
-
-        let git = |args: &[&str]| -> Result<String, String> {
-            let out = std::process::Command::new("git")
-                .current_dir(repo_path)
-                .args(args)
-                .output()
-                .map_err(|e| e.to_string())?;
-            if out.status.success() {
-                Ok(String::from_utf8_lossy(&out.stdout).trim().to_string())
-            } else {
-                Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
-            }
-        };
-
-        let rel_path = format!("Node/i18n/{lang_code}/ui.toml");
-        git(&["add", &rel_path])?;
-        git(&["commit", "-m", &format!("i18n: add/update {lang_code} translation")])?;
-        git(&["push"])?;
-
-        Ok(format!("Translation for '{lang_code}' pushed successfully."))
+        let repo = GixRepo::open(repo_path).map_err(|e| e.to_string())?;
+        push_translation_with(&repo, repo_path, lang_code, toml_content)
     }
+}
+
+/// Core push logic — uses only `GitRepoPort`, no gix types.
+/// Separated from `push_translation` to allow testing with a mock `GitRepoPort`.
+fn push_translation_with(
+    repo:         &impl GitRepoPort,
+    repo_path:    &std::path::Path,
+    lang_code:    &str,
+    toml_content: &str,
+) -> Result<String, String> {
+    // Write the file to disk so the working tree stays in sync.
+    let dest_dir = repo_path.join("Node").join("i18n").join(lang_code);
+    std::fs::create_dir_all(&dest_dir).map_err(|e| e.to_string())?;
+    std::fs::write(dest_dir.join("ui.toml"), toml_content).map_err(|e| e.to_string())?;
+
+    // 1. Write blob.
+    let blob = repo
+        .write_blob(toml_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    // 2. Build updated tree.
+    let (parent_id, root_tree) = repo
+        .head_commit_and_tree()
+        .map_err(|e| e.to_string())?;
+
+    let path_components = ["Node", "i18n", lang_code, "ui.toml"];
+    let new_tree = repo
+        .insert_blob_at_path(root_tree, &path_components, blob)
+        .map_err(|e| e.to_string())?;
+
+    // 3. Create commit.
+    let author = CommitAuthor {
+        name:  repo.config_string("user.name") .unwrap_or_else(|| "FreeSynergy".into()),
+        email: repo.config_string("user.email").unwrap_or_else(|| "noreply@freesynergy.net".into()),
+    };
+    let message   = format!("i18n: add/update {lang_code} translation");
+    let commit_id = repo
+        .create_commit(&author, &message, new_tree, parent_id)
+        .map_err(|e| e.to_string())?;
+
+    // 4. Push to origin.
+    let head_ref = repo.head_ref().map_err(|e| e.to_string())?;
+    let refspec  = format!("{head_ref}:{head_ref}");
+    repo.push_to_origin(&refspec).map_err(|e| e.to_string())?;
+
+    Ok(format!(
+        "Translation for '{lang_code}' pushed successfully (commit {}).",
+        commit_id.to_hex()
+    ))
 }

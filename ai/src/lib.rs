@@ -201,6 +201,62 @@ impl LlmEngine {
     pub fn is_installed(&self) -> bool {
         self.binary_path.exists()
     }
+
+    /// Writes `~/.continue/config.json` so the editor can use the local LLM.
+    /// Call after a successful `start()`.
+    pub fn write_continue_config(&self) -> Result<(), AiError> {
+        let home = std::env::var("HOME")
+            .map_err(|_| AiError::Config("HOME not set".into()))?;
+        let continue_dir = PathBuf::from(home).join(".continue");
+
+        std::fs::create_dir_all(&continue_dir)
+            .map_err(|e| AiError::Io(e.to_string()))?;
+
+        let api_base = format!(
+            "http://{}:{}/v1",
+            self.config.host, self.config.port
+        );
+
+        let system_prompt = "/no_think\n\n\
+            You are a senior Rust engineer and coding assistant for the FreeSynergy project.\n\n\
+            FreeSynergy is a self-hosted platform written in Rust. Tech stack:\n\
+            - Rust (all services and CLIs)\n\
+            - Dioxus (desktop UI, WebView)\n\
+            - SQLite (6 databases per node)\n\
+            - S3-compatible storage\n\
+            - TOML for config/manifests\n\n\
+            Rules: code and comments in English, chat in German, concise answers, \
+            OOP with traits over match blocks. \
+            Complex cross-repo architecture → Claude Code.";
+
+        let config = serde_json::json!({
+            "models": [{
+                "title": format!("{} (lokal)", self.config.model.hf_id().split('/').last().unwrap_or("LLM")),
+                "provider": "openai",
+                "model": "default",
+                "apiBase": api_base,
+                "apiKey": "none",
+                "systemMessage": system_prompt,
+                "completionOptions": { "temperature": 0.2, "maxTokens": 1024 }
+            }],
+            "tabAutocompleteModel": {
+                "title": "Autocomplete (lokal)",
+                "provider": "openai",
+                "model": "default",
+                "apiBase": api_base,
+                "apiKey": "none"
+            },
+            "allowAnonymousTelemetry": false
+        });
+
+        let json = serde_json::to_string_pretty(&config)
+            .map_err(|e| AiError::Config(e.to_string()))?;
+
+        std::fs::write(continue_dir.join("config.json"), json)
+            .map_err(|e| AiError::Io(e.to_string()))?;
+
+        Ok(())
+    }
 }
 
 impl AiEngine for LlmEngine {
@@ -278,64 +334,6 @@ impl AiEngine for LlmEngine {
         let _ = std::fs::remove_file(self.pid_file());
         Ok(())
     }
-}
-
-// ── Editor config (Continue.dev) ──────────────────────────────────────────────
-
-/// Writes `~/.continue/config.json` so the editor can use the local LLM.
-/// Called automatically after a successful `start()`.
-pub fn write_continue_config(engine: &LlmEngine) -> Result<(), AiError> {
-    let home = std::env::var("HOME")
-        .map_err(|_| AiError::Config("HOME not set".into()))?;
-    let continue_dir = PathBuf::from(home).join(".continue");
-
-    std::fs::create_dir_all(&continue_dir)
-        .map_err(|e| AiError::Io(e.to_string()))?;
-
-    let api_base = format!(
-        "http://{}:{}/v1",
-        engine.config.host, engine.config.port
-    );
-
-    let system_prompt = "/no_think\n\n\
-        You are a senior Rust engineer and coding assistant for the FreeSynergy project.\n\n\
-        FreeSynergy is a self-hosted platform written in Rust. Tech stack:\n\
-        - Rust (all services and CLIs)\n\
-        - Dioxus (desktop UI, WebView)\n\
-        - SQLite (6 databases per node)\n\
-        - S3-compatible storage\n\
-        - TOML for config/manifests\n\n\
-        Rules: code and comments in English, chat in German, concise answers, \
-        OOP with traits over match blocks. \
-        Complex cross-repo architecture → Claude Code.";
-
-    let config = serde_json::json!({
-        "models": [{
-            "title": format!("{} (lokal)", engine.config.model.hf_id().split('/').last().unwrap_or("LLM")),
-            "provider": "openai",
-            "model": "default",
-            "apiBase": api_base,
-            "apiKey": "none",
-            "systemMessage": system_prompt,
-            "completionOptions": { "temperature": 0.2, "maxTokens": 1024 }
-        }],
-        "tabAutocompleteModel": {
-            "title": "Autocomplete (lokal)",
-            "provider": "openai",
-            "model": "default",
-            "apiBase": api_base,
-            "apiKey": "none"
-        },
-        "allowAnonymousTelemetry": false
-    });
-
-    let json = serde_json::to_string_pretty(&config)
-        .map_err(|e| AiError::Config(e.to_string()))?;
-
-    std::fs::write(continue_dir.join("config.json"), json)
-        .map_err(|e| AiError::Io(e.to_string()))?;
-
-    Ok(())
 }
 
 // ── AiError ───────────────────────────────────────────────────────────────────

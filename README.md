@@ -21,10 +21,10 @@ Store ←→ Manager ←→ Programs / UI
 
 | Crate | Name | Responsibility |
 |---|---|---|
-| `language/` | `fsn-manager-language` | Active language — read, set, UI picker |
-| `theme/` | `fsn-manager-theme` | Active theme — read, set, UI picker |
-| `container/` | `fsn-manager-container-app` | Container apps — install, remove, start, stop (formerly Conductor) |
-| `icons/` | `fsn-manager-icons` | Icon sets — resolve paths, UI icon picker |
+| `language/` | `fs-manager-language` | Active language — read, set, UI picker |
+| `theme/` | `fs-manager-theme` | Active theme — read, set, UI picker |
+| `container/` | `fs-manager-container-app` | Container apps — install, remove, start, stop (formerly Conductor) |
+| `icons/` | `fs-manager-icons` | Icon sets — resolve paths, UI icon picker |
 
 ## Usage
 
@@ -32,13 +32,13 @@ Add the relevant manager as a dependency:
 
 ```toml
 [dependencies]
-fsn-manager-language = { path = "../FreeSynergy.Managers/language" }
+fs-manager-language = { path = "../FreeSynergy.Managers/language" }
 ```
 
 Then call the manager instead of building your own state:
 
 ```rust
-use fsn_manager_language::LanguageManager;
+use fs_manager_language::LanguageManager;
 
 let mgr = LanguageManager::new();
 let lang = mgr.active();          // current language

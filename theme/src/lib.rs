@@ -8,12 +8,25 @@
 // Programs that need theming import this crate and call ThemeManager.
 // Settings calls ThemeManager to render the theme picker.
 
+/// Common interface for all FreeSynergy managers.
+pub trait FsManager {
+    fn id(&self) -> &str;
+    fn name(&self) -> &str;
+    fn is_healthy(&self) -> bool;
+}
+
 /// A theme entry as stored and used across all programs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Theme {
     pub id: String,
     pub display_name: String,
     pub is_dark: bool,
+}
+
+impl Theme {
+    pub fn css_class(&self) -> &str {
+        if self.is_dark { "fs-theme-dark" } else { "fs-theme-light" }
+    }
 }
 
 /// Manages the active theme for the FreeSynergy ecosystem.
@@ -28,7 +41,7 @@ impl ThemeManager {
     pub fn active(&self) -> Theme {
         // TODO: read from Store
         Theme {
-            id: "fsn-dark".into(),
+            id: "fs-dark".into(),
             display_name: "FreeSynergy Dark".into(),
             is_dark: true,
         }
@@ -38,8 +51,8 @@ impl ThemeManager {
     pub fn available(&self) -> Vec<Theme> {
         // TODO: read from Store
         vec![
-            Theme { id: "fsn-dark".into(), display_name: "FreeSynergy Dark".into(), is_dark: true },
-            Theme { id: "fsn-light".into(), display_name: "FreeSynergy Light".into(), is_dark: false },
+            Theme { id: "fs-dark".into(), display_name: "FreeSynergy Dark".into(), is_dark: true },
+            Theme { id: "fs-light".into(), display_name: "FreeSynergy Light".into(), is_dark: false },
         ]
     }
 
@@ -52,9 +65,13 @@ impl ThemeManager {
 }
 
 impl Default for ThemeManager {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
+}
+
+impl FsManager for ThemeManager {
+    fn id(&self)         -> &str { "theme" }
+    fn name(&self)       -> &str { "Theme Manager" }
+    fn is_healthy(&self) -> bool { true }
 }
 
 #[derive(Debug)]

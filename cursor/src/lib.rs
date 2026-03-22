@@ -7,7 +7,7 @@
 //   - Activate a cursor set (marks it as the active set for the current theme)
 //   - Accept a CursorSetDraft for saving/publishing new sets
 //
-// Repository management uses fsn_core::RepositoryManager<CursorRepository> —
+// Repository management uses fs_core::RepositoryManager<CursorRepository> —
 // the same generic abstraction shared by the Store, Icon Manager, and Bundle Manager.
 //
 // The 31 standard cursor slots are defined by the FSN UI standards doc.
@@ -16,8 +16,8 @@
 
 use std::path::{Path, PathBuf};
 
-use fsn_core::{Repository, RepositoryManager};
-pub use fsn_core::RepositoryError;
+use fs_core::{Repository, RepositoryManager};
+pub use fs_core::RepositoryError;
 
 // ── CursorRepository ──────────────────────────────────────────────────────────
 
@@ -277,7 +277,7 @@ impl CursorSetDraft {
 /// and accepts drafts for saving new sets.
 ///
 /// Repository management is delegated to
-/// `RepositoryManager<CursorRepository>` from `fsn-core`.
+/// `RepositoryManager<CursorRepository>` from `fs-core`.
 pub struct CursorManager {
     /// Root directory that contains the `cursor-sets/` subdirectory.
     icons_root: PathBuf,
@@ -659,7 +659,7 @@ impl CursorSetBuilder {
 
 /// Errors for cursor set operations.
 ///
-/// For repository errors use [`RepositoryError`] (re-exported from `fsn-core`).
+/// For repository errors use [`RepositoryError`] (re-exported from `fs-core`).
 #[derive(Debug)]
 pub enum CursorError {
     SetNotFound(String),

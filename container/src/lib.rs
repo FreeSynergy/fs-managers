@@ -9,6 +9,13 @@
 // Formerly known as "Conductor". Renamed to reflect its actual role:
 // managing containerized applications within the FreeSynergy ecosystem.
 
+/// Common interface for all FreeSynergy managers.
+pub trait FsManager {
+    fn id(&self) -> &str;
+    fn name(&self) -> &str;
+    fn is_healthy(&self) -> bool;
+}
+
 /// A containerized application entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Container {
@@ -18,6 +25,12 @@ pub struct Container {
     pub status: AppStatus,
 }
 
+impl Container {
+    pub fn is_running(&self) -> bool {
+        self.status == AppStatus::Running
+    }
+}
+
 /// Runtime status of a container app.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppStatus {
@@ -25,6 +38,23 @@ pub enum AppStatus {
     Stopped,
     Installing,
     Error(String),
+}
+
+impl AppStatus {
+    pub fn is_busy(&self) -> bool {
+        matches!(self, Self::Installing | Self::Error(_))
+    }
+}
+
+impl std::fmt::Display for AppStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Running         => write!(f, "Running"),
+            Self::Stopped         => write!(f, "Stopped"),
+            Self::Installing      => write!(f, "Installing"),
+            Self::Error(msg)      => write!(f, "Error: {msg}"),
+        }
+    }
 }
 
 /// Manages containerized applications for the FreeSynergy ecosystem.
@@ -69,9 +99,13 @@ impl ContainerManager {
 }
 
 impl Default for ContainerManager {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
+}
+
+impl FsManager for ContainerManager {
+    fn id(&self)          -> &str { "container" }
+    fn name(&self)        -> &str { "Container App Manager" }
+    fn is_healthy(&self)  -> bool { true }
 }
 
 #[derive(Debug)]

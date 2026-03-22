@@ -1,11 +1,11 @@
 [package]
-name = "fsn-manager-container-app"
+name = "fs-manager-container-app"
 version = "0.1.0"
 edition = "2021"
 description = "FreeSynergy Container App Manager — manages containerized apps (formerly Conductor)"
 
 [lib]
-name = "fsn_manager_container"
+name = "fs_manager_container"
 path = "src/lib.rs"
 
 [dependencies]

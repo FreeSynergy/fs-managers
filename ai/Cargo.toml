@@ -1,5 +1,5 @@
 [package]
-name        = "fsn-manager-ai"
+name        = "fs-manager-ai"
 description = "FreeSynergy AI Manager — backend logic for local AI engine management"
 version     = "0.1.0"
 edition     = "2021"

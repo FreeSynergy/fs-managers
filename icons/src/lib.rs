@@ -9,13 +9,13 @@
 // Any program that needs an icon picker uses IconManager instead of
 // building its own file browser or hardcoding paths.
 //
-// Repository management uses fsn_core::RepositoryManager<IconRepository> —
+// Repository management uses fs_core::RepositoryManager<IconRepository> —
 // the same generic abstraction shared by the Store and Bundle Manager.
 
 use std::path::PathBuf;
 
-use fsn_core::{Repository, RepositoryManager};
-pub use fsn_core::RepositoryError;
+use fs_core::{Repository, RepositoryManager};
+pub use fs_core::RepositoryError;
 
 // ── IconRepository ────────────────────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ impl PickedIcon {
 /// and provides a filtered list for the icon picker UI.
 ///
 /// Repository management is delegated to
-/// `RepositoryManager<IconRepository>` from `fsn-core`.
+/// `RepositoryManager<IconRepository>` from `fs-core`.
 pub struct IconManager {
     /// Root directory that contains all installed icon sets.
     icons_root: PathBuf,
@@ -354,7 +354,7 @@ impl IconSetBuilder {
 
 /// Errors for icon set operations.
 ///
-/// For repository errors use [`RepositoryError`] (re-exported from `fsn-core`).
+/// For repository errors use [`RepositoryError`] (re-exported from `fs-core`).
 #[derive(Debug)]
 pub enum IconError {
     SetNotFound(String),

@@ -12,7 +12,7 @@ pub struct BusClient {
 
 impl BusClient {
     pub fn new() -> Self {
-        let base_url = std::env::var("FSN_BUS_URL").unwrap_or_else(|_| DEFAULT_BUS_URL.to_string());
+        let base_url = std::env::var("FS_BUS_URL").unwrap_or_else(|_| DEFAULT_BUS_URL.to_string());
         Self { base_url, client: reqwest::Client::new() }
     }
 

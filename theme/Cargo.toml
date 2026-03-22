@@ -1,11 +1,11 @@
 [package]
-name = "fsn-manager-theme"
+name = "fs-manager-theme"
 version = "0.1.0"
 edition = "2021"
 description = "FreeSynergy Theme Manager — reads/writes the active theme, provides UI picker component"
 
 [lib]
-name = "fsn_manager_theme"
+name = "fs_manager_theme"
 path = "src/lib.rs"
 
 [dependencies]
