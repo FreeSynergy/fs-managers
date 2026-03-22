@@ -1,5 +1,5 @@
 [package]
-name = "fs-manager-container-app"
+name = "fs-manager-container"
 version = "0.1.0"
 edition = "2021"
 description = "FreeSynergy Container App Manager — manages containerized apps (formerly Conductor)"
@@ -9,3 +9,4 @@ name = "fs_manager_container"
 path = "src/lib.rs"
 
 [dependencies]
+fs-core = { path = "../../fs-libs/fs-core" }
