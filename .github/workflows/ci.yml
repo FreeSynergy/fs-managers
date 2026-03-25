@@ -18,11 +18,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Checkout fs-libs
-        uses: actions/checkout@v4
-        with:
-          repository: FreeSynergy/fs-libs
-          path: ../fs-libs
-          token: ${{ secrets.FS_LIBS_TOKEN }}
+        run: git clone --depth=1 "https://x-access-token:${{ secrets.FS_LIBS_TOKEN }}@github.com/FreeSynergy/fs-libs.git" "${{ github.workspace }}/../fs-libs"
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -58,6 +54,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout fs-libs
+        run: git clone --depth=1 "https://x-access-token:${{ secrets.FS_LIBS_TOKEN }}@github.com/FreeSynergy/fs-libs.git" "${{ github.workspace }}/../fs-libs"
       - uses: EmbarkStudios/cargo-deny-action@v2
 
   machete:
