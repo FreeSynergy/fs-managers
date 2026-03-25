@@ -1,6 +1,5 @@
 [graph]
 targets = []
-exclude-dev = false
 
 [advisories]
 version = 2
@@ -28,7 +27,6 @@ exceptions = [
 [bans]
 multiple-versions = "warn"
 wildcards = "allow"
-deny = []
 
 [sources]
 unknown-registry = "deny"
