@@ -60,7 +60,7 @@ impl ThemeManager {
             .store
             .read_setting("theme.active")
             .unwrap_or_else(|| DEFAULT_THEME_ID.into());
-        self.find_by_id(&id).unwrap_or_else(|| self.default_theme())
+        Self::find_by_id(&id).unwrap_or_else(Self::default_theme)
     }
 
     /// Returns all available themes.
@@ -77,7 +77,7 @@ impl ThemeManager {
 
     /// Sets the active theme. Requires Store write permission.
     pub fn set_active(&self, id: &str) -> Result<(), ThemeError> {
-        if self.find_by_id(id).is_none() {
+        if Self::find_by_id(id).is_none() {
             return Err(ThemeError::NotFound(id.into()));
         }
         self.store
@@ -87,7 +87,7 @@ impl ThemeManager {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    fn find_by_id(&self, id: &str) -> Option<Theme> {
+    fn find_by_id(id: &str) -> Option<Theme> {
         BUILTIN_THEMES
             .iter()
             .find(|(tid, _, _)| *tid == id)
@@ -98,7 +98,7 @@ impl ThemeManager {
             })
     }
 
-    fn default_theme(&self) -> Theme {
+    fn default_theme() -> Theme {
         Theme {
             id: DEFAULT_THEME_ID.into(),
             display_name: "FreeSynergy Dark".into(),
