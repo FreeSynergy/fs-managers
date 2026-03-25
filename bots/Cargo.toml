@@ -12,20 +12,14 @@ path = "src/main.rs"
 
 [dependencies]
 # Database (via internal FSN abstraction — no direct sqlx/sea-orm deps)
-fs-db    = { path = "../../fs-libs/fs-db", features = ["sqlite"] }
-fs-error = { path = "../../fs-libs/fs-error" }
-tokio     = { version = "1", features = ["full"] }
+fs-db  = { path = "../../fs-libs/fs-db", features = ["sqlite"] }
+tokio  = { version = "1", features = ["full"] }
 
 # Serialization
-serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml       = "1"
 
 # Error handling
 anyhow = "1"
 
 # HTTP (Bus client)
 reqwest = { version = "0.13", features = ["json"], default-features = false }
-
-# Utilities
-chrono  = { version = "0.4", features = ["serde"] }
