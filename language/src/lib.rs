@@ -43,11 +43,11 @@ pub trait HasFlag {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Language {
     /// ISO 639-1 code (e.g. "de", "en", "fr").
-    pub id:           String,
+    pub id: String,
     /// Native name: "Deutsch", "Français", "English".
     pub display_name: String,
     /// BCP-47 locale: "de-DE", "fr-FR", "en-US".
-    pub locale:       String,
+    pub locale: String,
 }
 
 impl Language {
@@ -58,9 +58,9 @@ impl Language {
     pub fn from_code(code: &str) -> Language {
         let meta = fs_i18n::language_meta(code);
         Language {
-            id:           code.to_string(),
+            id: code.to_string(),
             display_name: meta.map(|m| m.native_name).unwrap_or(code).to_string(),
-            locale:       locale_for_code(code),
+            locale: locale_for_code(code),
         }
     }
 
@@ -76,7 +76,7 @@ impl Language {
     pub fn direction_label(&self) -> &'static str {
         match self.meta().map(|m| m.is_rtl()) {
             Some(true) => "Right-to-left",
-            _          => "Left-to-right",
+            _ => "Left-to-right",
         }
     }
 }
@@ -107,14 +107,14 @@ fn flag_for_code(code: &str) -> &'static str {
 /// Derive a BCP-47 locale string from an ISO 639-1 code.
 fn locale_for_code(code: &str) -> String {
     match code {
-        "en"  => "en-US",
-        "zh"  => "zh-CN",
-        "pt"  => "pt-PT",
-        "ar"  => "ar-SA",
-        "ko"  => "ko-KR",
-        "ja"  => "ja-JP",
+        "en" => "en-US",
+        "zh" => "zh-CN",
+        "pt" => "pt-PT",
+        "ar" => "ar-SA",
+        "ko" => "ko-KR",
+        "ja" => "ja-JP",
         "yue" => "yue-HK",
-        _     => return format!("{}-{}", code, code.to_uppercase()),
+        _ => return format!("{}-{}", code, code.to_uppercase()),
     }
     .to_string()
 }
@@ -130,7 +130,9 @@ pub trait FormatVariant: Sized + 'static {
     fn label(&self) -> &'static str;
 
     /// Example value rendered with this format, e.g. `"19.03.2026"`.
-    fn example(&self) -> &'static str { "" }
+    fn example(&self) -> &'static str {
+        ""
+    }
 
     /// All available variants in display order.
     fn all() -> &'static [Self];
@@ -220,10 +222,10 @@ impl TimeFormat {
             Self::H24 => format!("{:02}:{:02}", hour, minute),
             Self::H12 => {
                 let (h, ampm) = match hour {
-                    0      => (12, "AM"),
+                    0 => (12, "AM"),
                     1..=11 => (hour, "AM"),
-                    12     => (12, "PM"),
-                    _      => (hour - 12, "PM"),
+                    12 => (12, "PM"),
+                    _ => (hour - 12, "PM"),
                 };
                 format!("{:02}:{:02} {}", h, minute, ampm)
             }
@@ -248,13 +250,15 @@ pub enum NumberFormat {
 impl FormatVariant for NumberFormat {
     fn label(&self) -> &'static str {
         match self {
-            Self::EuropeDot  => "1.234,56",
-            Self::UsComma    => "1,234.56",
+            Self::EuropeDot => "1.234,56",
+            Self::UsComma => "1,234.56",
             Self::SpaceComma => "1 234,56",
         }
     }
 
-    fn example(&self) -> &'static str { self.label() }
+    fn example(&self) -> &'static str {
+        self.label()
+    }
 
     fn all() -> &'static [NumberFormat] {
         &[Self::EuropeDot, Self::UsComma, Self::SpaceComma]
@@ -264,16 +268,16 @@ impl FormatVariant for NumberFormat {
 impl NumberFormat {
     fn thousands_sep(&self) -> char {
         match self {
-            Self::EuropeDot  => '.',
-            Self::UsComma    => ',',
+            Self::EuropeDot => '.',
+            Self::UsComma => ',',
             Self::SpaceComma => ' ',
         }
     }
 
     fn decimal_sep(&self) -> char {
         match self {
-            Self::EuropeDot  => ',',
-            Self::UsComma    => '.',
+            Self::EuropeDot => ',',
+            Self::UsComma => '.',
             Self::SpaceComma => ',',
         }
     }
@@ -281,7 +285,11 @@ impl NumberFormat {
     pub fn format_integer(&self, value: i64) -> String {
         let abs_str = value.unsigned_abs().to_string();
         let grouped = group_thousands(&abs_str, self.thousands_sep());
-        if value < 0 { format!("-{}", grouped) } else { grouped }
+        if value < 0 {
+            format!("-{}", grouped)
+        } else {
+            grouped
+        }
     }
 
     pub fn format_decimal(&self, value: f64, decimal_places: usize) -> String {
@@ -289,8 +297,8 @@ impl NumberFormat {
         let mut parts = raw.splitn(2, '.');
         let int_part = parts.next().unwrap_or("0");
         let dec_part = parts.next().unwrap_or("");
-        let grouped  = group_thousands(int_part, self.thousands_sep());
-        let sign     = if value < 0.0 { "-" } else { "" };
+        let grouped = group_thousands(int_part, self.thousands_sep());
+        let sign = if value < 0.0 { "-" } else { "" };
         if decimal_places > 0 {
             format!("{}{}{}{}", sign, grouped, self.decimal_sep(), dec_part)
         } else {
@@ -319,13 +327,13 @@ fn group_thousands(digits: &str, sep: char) -> String {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InstalledLanguagePack {
     /// ISO 639-1 language code (e.g. "de", "fr").
-    pub lang_code:  String,
+    pub lang_code: String,
     /// Package this translation belongs to (e.g. "fs-container-app", "common").
     pub package_id: String,
     /// Pack version string.
-    pub version:    String,
+    pub version: String,
     /// Absolute path to the `.toml` translation file on disk.
-    pub file_path:  PathBuf,
+    pub file_path: PathBuf,
 }
 
 // ── LanguagePackRegistry ──────────────────────────────────────────────────────
@@ -374,12 +382,17 @@ impl LanguagePackRegistry {
 
     /// Return all packs for `package_id`.
     pub fn packs_for_package(&self, package_id: &str) -> Vec<&InstalledLanguagePack> {
-        self.packs.iter().filter(|p| p.package_id == package_id).collect()
+        self.packs
+            .iter()
+            .filter(|p| p.package_id == package_id)
+            .collect()
     }
 
     /// Return `true` if the given `(lang_code, package_id)` pair is installed.
     pub fn is_installed(&self, lang: &str, package_id: &str) -> bool {
-        self.packs.iter().any(|p| p.lang_code == lang && p.package_id == package_id)
+        self.packs
+            .iter()
+            .any(|p| p.lang_code == lang && p.package_id == package_id)
     }
 
     /// Return all distinct language codes that have at least one installed pack.
@@ -394,9 +407,11 @@ impl LanguagePackRegistry {
 
     /// Register a pack — replaces any existing entry for the same (lang, package_id).
     pub fn register(&mut self, pack: InstalledLanguagePack) {
-        if let Some(pos) = self.packs.iter().position(|p| {
-            p.lang_code == pack.lang_code && p.package_id == pack.package_id
-        }) {
+        if let Some(pos) = self
+            .packs
+            .iter()
+            .position(|p| p.lang_code == pack.lang_code && p.package_id == pack.package_id)
+        {
             self.packs[pos] = pack;
         } else {
             self.packs.push(pack);
@@ -421,19 +436,19 @@ impl LanguagePackRegistry {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct LocaleSettings {
     /// Active interface language code (e.g. "de", "en").
-    pub language:             Option<String>,
+    pub language: Option<String>,
     /// Fallback when a translation key is missing in the active language.
-    pub fallback_language:    Option<String>,
+    pub fallback_language: Option<String>,
     /// Languages the user has subscribed to — packs are downloaded for all of them.
     pub subscribed_languages: Option<Vec<String>>,
     /// Date display format.
-    pub date_format:          Option<DateFormat>,
+    pub date_format: Option<DateFormat>,
     /// Clock format (24h / 12h).
-    pub time_format:          Option<TimeFormat>,
+    pub time_format: Option<TimeFormat>,
     /// Number and decimal separator format.
-    pub number_format:        Option<NumberFormat>,
+    pub number_format: Option<NumberFormat>,
     /// Automatically download new language pack updates from the Store.
-    pub auto_update_packs:    Option<bool>,
+    pub auto_update_packs: Option<bool>,
 }
 
 impl LocaleSettings {
@@ -467,10 +482,13 @@ impl LocaleSettings {
     /// For `subscribed_languages`, the two lists are unioned (no deduplication loss).
     pub fn merge_with(self, other: &LocaleSettings) -> LocaleSettings {
         LocaleSettings {
-            language:          other.language.clone().or(self.language),
+            language: other.language.clone().or(self.language),
             fallback_language: other.fallback_language.clone().or(self.fallback_language),
             subscribed_languages: {
-                match (self.subscribed_languages, other.subscribed_languages.clone()) {
+                match (
+                    self.subscribed_languages,
+                    other.subscribed_languages.clone(),
+                ) {
                     (Some(base), Some(over)) => {
                         let mut combined = base;
                         for code in over {
@@ -483,9 +501,9 @@ impl LocaleSettings {
                     (base, over) => over.or(base),
                 }
             },
-            date_format:       other.date_format.clone().or(self.date_format),
-            time_format:       other.time_format.clone().or(self.time_format),
-            number_format:     other.number_format.clone().or(self.number_format),
+            date_format: other.date_format.clone().or(self.date_format),
+            time_format: other.time_format.clone().or(self.time_format),
+            number_format: other.number_format.clone().or(self.number_format),
             auto_update_packs: other.auto_update_packs.or(self.auto_update_packs),
         }
     }
@@ -493,14 +511,19 @@ impl LocaleSettings {
     /// Resolve all `Option`s into concrete values using built-in defaults.
     pub fn resolved(&self) -> ResolvedLocaleSettings {
         ResolvedLocaleSettings {
-            language:             self.language.clone().unwrap_or_else(|| "en".into()),
-            fallback_language:    self.fallback_language.clone().unwrap_or_else(|| "en".into()),
-            subscribed_languages: self.subscribed_languages.clone()
-                                      .unwrap_or_else(|| vec!["en".into(), "de".into()]),
-            date_format:          self.date_format.clone().unwrap_or_default(),
-            time_format:          self.time_format.clone().unwrap_or_default(),
-            number_format:        self.number_format.clone().unwrap_or_default(),
-            auto_update_packs:    self.auto_update_packs.unwrap_or(true),
+            language: self.language.clone().unwrap_or_else(|| "en".into()),
+            fallback_language: self
+                .fallback_language
+                .clone()
+                .unwrap_or_else(|| "en".into()),
+            subscribed_languages: self
+                .subscribed_languages
+                .clone()
+                .unwrap_or_else(|| vec!["en".into(), "de".into()]),
+            date_format: self.date_format.clone().unwrap_or_default(),
+            time_format: self.time_format.clone().unwrap_or_default(),
+            number_format: self.number_format.clone().unwrap_or_default(),
+            auto_update_packs: self.auto_update_packs.unwrap_or(true),
         }
     }
 }
@@ -510,14 +533,14 @@ impl LocaleSettings {
 /// Fully resolved locale settings — all fields are concrete values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResolvedLocaleSettings {
-    pub language:             String,
-    pub fallback_language:    String,
+    pub language: String,
+    pub fallback_language: String,
     /// All languages the user has subscribed to (packs downloaded for each).
     pub subscribed_languages: Vec<String>,
-    pub date_format:          DateFormat,
-    pub time_format:          TimeFormat,
-    pub number_format:        NumberFormat,
-    pub auto_update_packs:    bool,
+    pub date_format: DateFormat,
+    pub time_format: TimeFormat,
+    pub number_format: NumberFormat,
+    pub auto_update_packs: bool,
 }
 
 impl ResolvedLocaleSettings {
@@ -547,7 +570,9 @@ impl ResolvedLocaleSettings {
 pub struct LanguageManager;
 
 impl LanguageManager {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     // ── Settings ──────────────────────────────────────────────────────────────
 
@@ -556,13 +581,13 @@ impl LanguageManager {
     /// TODO: fetch from StoreClient once the Store layer is implemented.
     pub fn store_defaults(&self) -> LocaleSettings {
         LocaleSettings {
-            language:             Some("en".into()),
-            fallback_language:    Some("en".into()),
+            language: Some("en".into()),
+            fallback_language: Some("en".into()),
             subscribed_languages: Some(vec!["en".into(), "de".into()]),
-            date_format:          Some(DateFormat::DmY),
-            time_format:          Some(TimeFormat::H24),
-            number_format:        Some(NumberFormat::EuropeDot),
-            auto_update_packs:    Some(true),
+            date_format: Some(DateFormat::DmY),
+            time_format: Some(TimeFormat::H24),
+            number_format: Some(NumberFormat::EuropeDot),
+            auto_update_packs: Some(true),
         }
     }
 
@@ -580,7 +605,9 @@ impl LanguageManager {
 
     /// Save updated Inventory settings (partial update — only `Some` fields are stored).
     pub fn save_settings(&self, settings: LocaleSettings) -> Result<(), LanguageError> {
-        settings.save_inventory().map_err(fs_core::ManagerError::StoreError)
+        settings
+            .save_inventory()
+            .map_err(fs_core::ManagerError::StoreError)
     }
 
     // ── Active language ───────────────────────────────────────────────────────
@@ -594,7 +621,8 @@ impl LanguageManager {
     pub fn set_active(&self, id: &str) -> Result<(), LanguageError> {
         let mut inv = LocaleSettings::load_inventory();
         inv.language = Some(id.to_string());
-        inv.save_inventory().map_err(fs_core::ManagerError::StoreError)
+        inv.save_inventory()
+            .map_err(fs_core::ManagerError::StoreError)
     }
 
     // ── Subscriptions ─────────────────────────────────────────────────────────
@@ -612,13 +640,14 @@ impl LanguageManager {
     /// No-op if already subscribed.  After subscribing, call
     /// [`download_for_language`](Self::download_for_language) to fetch packs.
     pub fn subscribe(&self, lang_code: &str) -> Result<(), LanguageError> {
-        let mut inv  = LocaleSettings::load_inventory();
+        let mut inv = LocaleSettings::load_inventory();
         let mut codes = inv.subscribed_languages.unwrap_or_default();
         if !codes.contains(&lang_code.to_string()) {
             codes.push(lang_code.to_string());
         }
         inv.subscribed_languages = Some(codes);
-        inv.save_inventory().map_err(fs_core::ManagerError::StoreError)
+        inv.save_inventory()
+            .map_err(fs_core::ManagerError::StoreError)
     }
 
     /// Unsubscribe from a language.
@@ -627,12 +656,15 @@ impl LanguageManager {
     /// downloaded automatically for future package installs.
     pub fn unsubscribe(&self, lang_code: &str) -> Result<(), LanguageError> {
         let mut inv = LocaleSettings::load_inventory();
-        let codes = inv.subscribed_languages.unwrap_or_default()
+        let codes = inv
+            .subscribed_languages
+            .unwrap_or_default()
             .into_iter()
             .filter(|c| c.as_str() != lang_code)
             .collect();
         inv.subscribed_languages = Some(codes);
-        inv.save_inventory().map_err(fs_core::ManagerError::StoreError)
+        inv.save_inventory()
+            .map_err(fs_core::ManagerError::StoreError)
     }
 
     // ── Registry ──────────────────────────────────────────────────────────────
@@ -733,21 +765,33 @@ impl LanguageManager {
 }
 
 impl Default for LanguageManager {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SelectableManager for LanguageManager {
-    type Item  = Language;
+    type Item = Language;
     type Error = LanguageError;
 
-    fn active(&self)               -> Language         { LanguageManager::active(self) }
-    fn available(&self)            -> Vec<Language>    { LanguageManager::available(self) }
-    fn set_active(&self, id: &str) -> Result<(), LanguageError> { LanguageManager::set_active(self, id) }
+    fn active(&self) -> Language {
+        LanguageManager::active(self)
+    }
+    fn available(&self) -> Vec<Language> {
+        LanguageManager::available(self)
+    }
+    fn set_active(&self, id: &str) -> Result<(), LanguageError> {
+        LanguageManager::set_active(self, id)
+    }
 }
 
 impl FsManager for LanguageManager {
-    fn id(&self)   -> &str { "language" }
-    fn name(&self) -> &str { "Language Manager" }
+    fn id(&self) -> &str {
+        "language"
+    }
+    fn name(&self) -> &str {
+        "Language Manager"
+    }
 }
 
 // ── LanguageError ─────────────────────────────────────────────────────────────

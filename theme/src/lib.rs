@@ -22,13 +22,17 @@ pub struct Theme {
 
 impl Theme {
     pub fn css_class(&self) -> &str {
-        if self.is_dark { "fs-theme-dark" } else { "fs-theme-light" }
+        if self.is_dark {
+            "fs-theme-dark"
+        } else {
+            "fs-theme-light"
+        }
     }
 }
 
 /// Known built-in themes.
 const BUILTIN_THEMES: &[(&str, &str, bool)] = &[
-    ("fs-dark",  "FreeSynergy Dark",  true),
+    ("fs-dark", "FreeSynergy Dark", true),
     ("fs-light", "FreeSynergy Light", false),
 ];
 
@@ -64,9 +68,9 @@ impl ThemeManager {
         BUILTIN_THEMES
             .iter()
             .map(|(id, name, dark)| Theme {
-                id:           (*id).into(),
+                id: (*id).into(),
                 display_name: (*name).into(),
-                is_dark:      *dark,
+                is_dark: *dark,
             })
             .collect()
     }
@@ -84,39 +88,56 @@ impl ThemeManager {
     // ── Private helpers ───────────────────────────────────────────────────────
 
     fn find_by_id(&self, id: &str) -> Option<Theme> {
-        BUILTIN_THEMES.iter().find(|(tid, _, _)| *tid == id).map(|(tid, name, dark)| Theme {
-            id:           (*tid).into(),
-            display_name: (*name).into(),
-            is_dark:      *dark,
-        })
+        BUILTIN_THEMES
+            .iter()
+            .find(|(tid, _, _)| *tid == id)
+            .map(|(tid, name, dark)| Theme {
+                id: (*tid).into(),
+                display_name: (*name).into(),
+                is_dark: *dark,
+            })
     }
 
     fn default_theme(&self) -> Theme {
         Theme {
-            id:           DEFAULT_THEME_ID.into(),
+            id: DEFAULT_THEME_ID.into(),
             display_name: "FreeSynergy Dark".into(),
-            is_dark:      true,
+            is_dark: true,
         }
     }
 }
 
 impl Default for ThemeManager {
-    fn default() -> Self { Self::with_noop() }
+    fn default() -> Self {
+        Self::with_noop()
+    }
 }
 
 impl SelectableManager for ThemeManager {
-    type Item  = Theme;
+    type Item = Theme;
     type Error = ThemeError;
 
-    fn active(&self)               -> Theme                   { ThemeManager::active(self) }
-    fn available(&self)            -> Vec<Theme>              { ThemeManager::available(self) }
-    fn set_active(&self, id: &str) -> Result<(), ThemeError>  { ThemeManager::set_active(self, id) }
+    fn active(&self) -> Theme {
+        ThemeManager::active(self)
+    }
+    fn available(&self) -> Vec<Theme> {
+        ThemeManager::available(self)
+    }
+    fn set_active(&self, id: &str) -> Result<(), ThemeError> {
+        ThemeManager::set_active(self, id)
+    }
 }
 
 impl FsManager for ThemeManager {
-    fn id(&self)         -> &str { "theme" }
-    fn name(&self)       -> &str { "Theme Manager" }
-    fn is_healthy(&self) -> bool { true }
+    fn id(&self) -> &str {
+        "theme"
+    }
+    fn name(&self) -> &str {
+        "Theme Manager"
+    }
+    fn is_healthy(&self) -> bool {
+        true
+    }
 }
 
 /// Error type for the Theme Manager — alias of the shared [`fs_core::ManagerError`].

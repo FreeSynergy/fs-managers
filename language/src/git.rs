@@ -31,7 +31,7 @@ impl OidBytes {
 
 /// Author / committer identity for a git commit.
 pub struct CommitAuthor {
-    pub name:  String,
+    pub name: String,
     pub email: String,
 }
 
@@ -50,12 +50,12 @@ pub enum GitError {
 impl std::fmt::Display for GitError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Open(e)      => write!(f, "git open: {e}"),
+            Self::Open(e) => write!(f, "git open: {e}"),
             Self::BlobWrite(e) => write!(f, "git blob write: {e}"),
             Self::TreeWrite(e) => write!(f, "git tree write: {e}"),
-            Self::Commit(e)    => write!(f, "git commit: {e}"),
-            Self::Push(e)      => write!(f, "git push: {e}"),
-            Self::Head(e)      => write!(f, "git HEAD: {e}"),
+            Self::Commit(e) => write!(f, "git commit: {e}"),
+            Self::Push(e) => write!(f, "git push: {e}"),
+            Self::Head(e) => write!(f, "git HEAD: {e}"),
         }
     }
 }
@@ -95,10 +95,10 @@ pub trait GitRepoPort {
     /// Creates a commit on HEAD referencing the given tree and single parent.
     fn create_commit(
         &self,
-        author:  &CommitAuthor,
+        author: &CommitAuthor,
         message: &str,
-        tree:    OidBytes,
-        parent:  OidBytes,
+        tree: OidBytes,
+        parent: OidBytes,
     ) -> Result<OidBytes, GitError>;
 
     /// Pushes `refspec` (e.g. `"refs/heads/main:refs/heads/main"`) to `origin`.
@@ -140,8 +140,14 @@ impl GitRepoPort for GixRepo {
     }
 
     fn head_commit_and_tree(&self) -> Result<(OidBytes, OidBytes), GitError> {
-        let commit   = self.inner.head_commit().map_err(|e| GitError::Head(e.to_string()))?;
-        let tree_id  = commit.tree_id().map_err(|e| GitError::Head(e.to_string()))?.detach();
+        let commit = self
+            .inner
+            .head_commit()
+            .map_err(|e| GitError::Head(e.to_string()))?;
+        let tree_id = commit
+            .tree_id()
+            .map_err(|e| GitError::Head(e.to_string()))?
+            .detach();
         Ok((OidBytes::from_gix(commit.id), OidBytes::from_gix(tree_id)))
     }
 
@@ -165,12 +171,12 @@ impl GitRepoPort for GixRepo {
 
     fn create_commit(
         &self,
-        author:  &CommitAuthor,
+        author: &CommitAuthor,
         message: &str,
-        tree:    OidBytes,
-        parent:  OidBytes,
+        tree: OidBytes,
+        parent: OidBytes,
     ) -> Result<OidBytes, GitError> {
-        let time   = gix::date::Time::now_local_or_utc();
+        let time = gix::date::Time::now_local_or_utc();
         let offset = time.offset.unsigned_abs();
         let time_str = format!(
             "{} {}{:02}{:02}",
@@ -180,19 +186,27 @@ impl GitRepoPort for GixRepo {
             (offset % 3600) / 60,
         );
         let sig_ref = gix::actor::SignatureRef {
-            name:  gix::bstr::BStr::new(author.name.as_bytes()),
+            name: gix::bstr::BStr::new(author.name.as_bytes()),
             email: gix::bstr::BStr::new(author.email.as_bytes()),
-            time:  &time_str,
+            time: &time_str,
         };
         self.inner
-            .commit_as(sig_ref, sig_ref, "HEAD", message, tree.to_gix()?, [parent.to_gix()?])
+            .commit_as(
+                sig_ref,
+                sig_ref,
+                "HEAD",
+                message,
+                tree.to_gix()?,
+                [parent.to_gix()?],
+            )
             .map(|id| OidBytes::from_gix(id.detach()))
             .map_err(|e| GitError::Commit(e.to_string()))
     }
 
     fn push_to_origin(&self, refspec: &str) -> Result<(), GitError> {
         // gix push API changed significantly in 0.80; delegate to the git CLI to stay stable.
-        let workdir = self.inner
+        let workdir = self
+            .inner
             .workdir()
             .ok_or_else(|| GitError::Push("bare repository has no work dir".into()))?;
 
@@ -218,43 +232,45 @@ impl GitRepoPort for GixRepo {
 /// Recursively inserts `blob_id` at `path_components` inside `tree_id`,
 /// creating intermediate subtrees as needed. Returns the new root tree OID.
 fn insert_blob_into_gix_tree(
-    repo:            &gix::Repository,
-    tree_id:         gix::ObjectId,
+    repo: &gix::Repository,
+    tree_id: gix::ObjectId,
     path_components: &[&str],
-    blob_id:         gix::ObjectId,
+    blob_id: gix::ObjectId,
 ) -> Result<gix::ObjectId, Box<dyn std::error::Error>> {
     use gix::objs::tree::{Entry, EntryKind};
     use gix::objs::Tree;
 
-    let existing_entries: Vec<Entry> =
-        if tree_id == gix::ObjectId::empty_tree(repo.object_hash()) {
-            vec![]
-        } else {
-            let obj  = repo.find_object(tree_id)?;
-            let tree = obj.peel_to_tree()?;
-            tree.decode()?
-                .entries
-                .iter()
-                .map(|e| Entry {
-                    mode:     e.mode,
-                    filename: e.filename.to_owned(),
-                    oid:      e.oid.to_owned(),
-                })
-                .collect()
-        };
+    let existing_entries: Vec<Entry> = if tree_id == gix::ObjectId::empty_tree(repo.object_hash()) {
+        vec![]
+    } else {
+        let obj = repo.find_object(tree_id)?;
+        let tree = obj.peel_to_tree()?;
+        tree.decode()?
+            .entries
+            .iter()
+            .map(|e| Entry {
+                mode: e.mode,
+                filename: e.filename.to_owned(),
+                oid: e.oid.to_owned(),
+            })
+            .collect()
+    };
 
-    let target_name  = path_components[0].as_bytes();
-    let mut entries  = existing_entries;
+    let target_name = path_components[0].as_bytes();
+    let mut entries = existing_entries;
 
     if path_components.len() == 1 {
         let new_entry = Entry {
-            mode:     EntryKind::Blob.into(),
+            mode: EntryKind::Blob.into(),
             filename: target_name.into(),
-            oid:      blob_id,
+            oid: blob_id,
         };
-        match entries.iter().position(|e| e.filename.as_slice() == target_name) {
+        match entries
+            .iter()
+            .position(|e| e.filename.as_slice() == target_name)
+        {
             Some(pos) => entries[pos] = new_entry,
-            None      => entries.push(new_entry),
+            None => entries.push(new_entry),
         }
     } else {
         let sub_tree_id = entries
@@ -267,13 +283,16 @@ fn insert_blob_into_gix_tree(
             insert_blob_into_gix_tree(repo, sub_tree_id, &path_components[1..], blob_id)?;
 
         let new_entry = Entry {
-            mode:     EntryKind::Tree.into(),
+            mode: EntryKind::Tree.into(),
             filename: target_name.into(),
-            oid:      new_sub_tree_id,
+            oid: new_sub_tree_id,
         };
-        match entries.iter().position(|e| e.filename.as_slice() == target_name) {
+        match entries
+            .iter()
+            .position(|e| e.filename.as_slice() == target_name)
+        {
             Some(pos) => entries[pos] = new_entry,
-            None      => entries.push(new_entry),
+            None => entries.push(new_entry),
         }
     }
 

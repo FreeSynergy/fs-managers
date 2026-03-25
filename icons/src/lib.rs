@@ -14,8 +14,10 @@
 
 use std::path::PathBuf;
 
-use fs_core::{FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase, parse_manifest_sections};
 pub use fs_core::RepositoryError;
+use fs_core::{
+    parse_manifest_sections, FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase,
+};
 
 // ── IconRepository ────────────────────────────────────────────────────────────
 
@@ -35,10 +37,18 @@ pub struct IconRepository {
 }
 
 impl Repository for IconRepository {
-    fn id(&self) -> &str { &self.id }
-    fn builtin(&self) -> bool { self.builtin }
-    fn enabled(&self) -> bool { self.enabled }
-    fn set_enabled(&mut self, enabled: bool) { self.enabled = enabled; }
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn builtin(&self) -> bool {
+        self.builtin
+    }
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+    fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
 }
 
 // ── IconSet ───────────────────────────────────────────────────────────────────
@@ -119,10 +129,7 @@ pub struct IconManager {
 }
 
 impl IconManager {
-    pub fn new(
-        icons_root: impl Into<PathBuf>,
-        repositories: Vec<IconRepository>,
-    ) -> Self {
+    pub fn new(icons_root: impl Into<PathBuf>, repositories: Vec<IconRepository>) -> Self {
         Self {
             icons_root: icons_root.into(),
             repositories: RepositoryManager::new(repositories),
@@ -143,12 +150,12 @@ impl IconManager {
                 let path = self.icons_root.join(&proto.base.id);
                 let icon_count = count_icons(&path);
                 IconSet {
-                    id:                proto.base.id,
-                    name:              proto.base.name,
-                    description:       proto.base.description,
+                    id: proto.base.id,
+                    name: proto.base.name,
+                    description: proto.base.description,
                     has_dark_variants: proto.has_dark_variants,
-                    source_repo_id:    proto.base.source_repo_id,
-                    builtin:           proto.base.builtin,
+                    source_repo_id: proto.base.source_repo_id,
+                    builtin: proto.base.builtin,
                     path,
                     icon_count,
                 }
@@ -227,9 +234,7 @@ impl IconManager {
         }
 
         let mut names = Vec::new();
-        for entry in
-            std::fs::read_dir(&set_dir).map_err(|e| IconError::IoError(e.to_string()))?
-        {
+        for entry in std::fs::read_dir(&set_dir).map_err(|e| IconError::IoError(e.to_string()))? {
             let entry = entry.map_err(|e| IconError::IoError(e.to_string()))?;
             let path = entry.path();
             if path.extension().and_then(|e| e.to_str()) == Some("svg") {
@@ -246,8 +251,12 @@ impl IconManager {
 }
 
 impl FsManager for IconManager {
-    fn id(&self)   -> &str { "icons" }
-    fn name(&self) -> &str { "Icon Manager" }
+    fn id(&self) -> &str {
+        "icons"
+    }
+    fn name(&self) -> &str {
+        "Icon Manager"
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -275,7 +284,7 @@ fn count_icons(set_dir: &std::path::Path) -> usize {
 /// Parsed proto for one icon set section — common fields via [`SetBase`],
 /// icon-specific extras appended.
 struct IconSetProto {
-    base:              SetBase,
+    base: SetBase,
     has_dark_variants: bool,
 }
 
@@ -285,7 +294,7 @@ struct IconSetProto {
 /// all common fields to [`SetBase::apply_field`].
 #[derive(Default)]
 struct IconSetBuilder {
-    base:              SetBase,
+    base: SetBase,
     has_dark_variants: bool,
 }
 
@@ -295,13 +304,15 @@ impl ManifestBuilder for IconSetBuilder {
     fn apply_field(&mut self, key: &str, val: String) {
         match key {
             "has_dark_variants" => self.has_dark_variants = val == "true",
-            _                   => { self.base.apply_field(key, val); }
+            _ => {
+                self.base.apply_field(key, val);
+            }
         }
     }
 
     fn build(self) -> Option<IconSetProto> {
         self.base.is_valid().then(|| IconSetProto {
-            base:              self.base,
+            base: self.base,
             has_dark_variants: self.has_dark_variants,
         })
     }

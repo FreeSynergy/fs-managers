@@ -37,9 +37,9 @@ impl EngineStatus {
 
     pub fn label(&self) -> &str {
         match self {
-            Self::Stopped       => "Stopped",
+            Self::Stopped => "Stopped",
             Self::Running { .. } => "Running",
-            Self::Error(_)      => "Error",
+            Self::Error(_) => "Error",
         }
     }
 }
@@ -52,13 +52,13 @@ impl EngineStatus {
 /// code needs to change.
 pub struct ModelSpec {
     /// Hugging Face model ID, e.g. `"Qwen/Qwen3-4B"`.
-    pub hf_id:        &'static str,
+    pub hf_id: &'static str,
     /// Human-readable name shown in UI pickers.
     pub display_name: &'static str,
     /// Estimated RAM in GB after ISQ Q4K quantization.
-    pub ram_gb:       f32,
+    pub ram_gb: f32,
     /// Factory: construct the matching [`LlmModel`] variant.
-    make:             fn() -> LlmModel,
+    make: fn() -> LlmModel,
 }
 
 /// All built-in models. Order determines `all_predefined()` output.
@@ -67,9 +67,24 @@ pub struct ModelSpec {
 /// in `spec()`.  Everything else (display_name, ram_gb, from_hf_id, …) is
 /// driven automatically from this table.
 const CATALOGUE: &[ModelSpec] = &[
-    ModelSpec { hf_id: "Qwen/Qwen3-4B",         display_name: "Qwen3-4B  (~3.5 GB RAM, fast)",               ram_gb: 3.5, make: || LlmModel::Qwen3_4B },
-    ModelSpec { hf_id: "Qwen/Qwen3-8B",         display_name: "Qwen3-8B  (~6 GB RAM, better quality)",       ram_gb: 6.0, make: || LlmModel::Qwen3_8B },
-    ModelSpec { hf_id: "Qwen/Qwen2.5-Coder-7B", display_name: "Qwen2.5-Coder-7B  (~5 GB RAM, code-focused)", ram_gb: 5.0, make: || LlmModel::Qwen25Coder7B },
+    ModelSpec {
+        hf_id: "Qwen/Qwen3-4B",
+        display_name: "Qwen3-4B  (~3.5 GB RAM, fast)",
+        ram_gb: 3.5,
+        make: || LlmModel::Qwen3_4B,
+    },
+    ModelSpec {
+        hf_id: "Qwen/Qwen3-8B",
+        display_name: "Qwen3-8B  (~6 GB RAM, better quality)",
+        ram_gb: 6.0,
+        make: || LlmModel::Qwen3_8B,
+    },
+    ModelSpec {
+        hf_id: "Qwen/Qwen2.5-Coder-7B",
+        display_name: "Qwen2.5-Coder-7B  (~5 GB RAM, code-focused)",
+        ram_gb: 5.0,
+        make: || LlmModel::Qwen25Coder7B,
+    },
 ];
 
 // ── LlmModel ──────────────────────────────────────────────────────────────────
@@ -89,17 +104,23 @@ impl LlmModel {
     /// Custom models return `None`.
     fn spec(&self) -> Option<&'static ModelSpec> {
         match self {
-            Self::Qwen3_4B      => Some(&CATALOGUE[0]),
-            Self::Qwen3_8B      => Some(&CATALOGUE[1]),
+            Self::Qwen3_4B => Some(&CATALOGUE[0]),
+            Self::Qwen3_8B => Some(&CATALOGUE[1]),
             Self::Qwen25Coder7B => Some(&CATALOGUE[2]),
-            Self::Custom(_)     => None,
+            Self::Custom(_) => None,
         }
     }
 
     /// Hugging Face model ID (e.g. `"Qwen/Qwen3-4B"`).
     pub fn hf_id(&self) -> &str {
         self.spec().map_or_else(
-            || if let Self::Custom(id) = self { id.as_str() } else { unreachable!() },
+            || {
+                if let Self::Custom(id) = self {
+                    id.as_str()
+                } else {
+                    unreachable!()
+                }
+            },
             |s| s.hf_id,
         )
     }
@@ -133,20 +154,20 @@ impl LlmModel {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LlmConfig {
-    pub model:    LlmModel,
-    pub port:     u16,
-    pub host:     String,
-    pub isq:      String,
+    pub model: LlmModel,
+    pub port: u16,
+    pub host: String,
+    pub isq: String,
     pub max_seqs: u32,
 }
 
 impl Default for LlmConfig {
     fn default() -> Self {
         Self {
-            model:    LlmModel::Qwen3_4B,
-            port:     1234,
-            host:     "127.0.0.1".into(),
-            isq:      "q4k".into(),
+            model: LlmModel::Qwen3_4B,
+            port: 1234,
+            host: "127.0.0.1".into(),
+            isq: "q4k".into(),
             max_seqs: 4,
         }
     }
@@ -167,29 +188,28 @@ pub trait AiEngine {
 
 /// LLM inference engine backed by mistral.rs (`mistralrs serve`).
 pub struct LlmEngine {
-    pub config:      LlmConfig,
+    pub config: LlmConfig,
     pub binary_path: PathBuf,
-    pub data_dir:    PathBuf,
+    pub data_dir: PathBuf,
 }
 
 impl LlmEngine {
     pub fn new(
-        config:      LlmConfig,
+        config: LlmConfig,
         binary_path: impl Into<PathBuf>,
-        data_dir:    impl Into<PathBuf>,
+        data_dir: impl Into<PathBuf>,
     ) -> Self {
         Self {
             config,
             binary_path: binary_path.into(),
-            data_dir:    data_dir.into(),
+            data_dir: data_dir.into(),
         }
     }
 
     /// Default install path for the mistral.rs binary.
     pub fn default_binary() -> PathBuf {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/root".into());
-        PathBuf::from(home)
-            .join(".local/share/fsn/bin/mistral/mistralrs")
+        PathBuf::from(home).join(".local/share/fsn/bin/mistral/mistralrs")
     }
 
     /// Default data directory for logs, PID file, and model cache.
@@ -237,17 +257,12 @@ impl LlmEngine {
     /// Writes `~/.continue/config.json` so the editor can use the local LLM.
     /// Call after a successful `start()`.
     pub fn write_continue_config(&self) -> Result<(), AiError> {
-        let home = std::env::var("HOME")
-            .map_err(|_| AiError::Config("HOME not set".into()))?;
+        let home = std::env::var("HOME").map_err(|_| AiError::Config("HOME not set".into()))?;
         let continue_dir = PathBuf::from(home).join(".continue");
 
-        std::fs::create_dir_all(&continue_dir)
-            .map_err(|e| AiError::Io(e.to_string()))?;
+        std::fs::create_dir_all(&continue_dir).map_err(|e| AiError::Io(e.to_string()))?;
 
-        let api_base = format!(
-            "http://{}:{}/v1",
-            self.config.host, self.config.port
-        );
+        let api_base = format!("http://{}:{}/v1", self.config.host, self.config.port);
 
         let system_prompt = "/no_think\n\n\
             You are a senior Rust engineer and coding assistant for the FreeSynergy project.\n\n\
@@ -281,8 +296,8 @@ impl LlmEngine {
             "allowAnonymousTelemetry": false
         });
 
-        let json = serde_json::to_string_pretty(&config)
-            .map_err(|e| AiError::Config(e.to_string()))?;
+        let json =
+            serde_json::to_string_pretty(&config).map_err(|e| AiError::Config(e.to_string()))?;
 
         std::fs::write(continue_dir.join("config.json"), json)
             .map_err(|e| AiError::Io(e.to_string()))?;
@@ -292,16 +307,24 @@ impl LlmEngine {
 }
 
 impl AiEngine for LlmEngine {
-    fn id(&self)          -> &str { "mistral" }
-    fn name(&self)        -> &str { "Mistral.rs" }
-    fn engine_type(&self) -> EngineType { EngineType::Llm }
+    fn id(&self) -> &str {
+        "mistral"
+    }
+    fn name(&self) -> &str {
+        "Mistral.rs"
+    }
+    fn engine_type(&self) -> EngineType {
+        EngineType::Llm
+    }
 
     fn status(&self) -> EngineStatus {
         let Some(pid) = self.read_pid() else {
             return EngineStatus::Stopped;
         };
         if Self::is_pid_alive(pid) {
-            EngineStatus::Running { port: self.config.port }
+            EngineStatus::Running {
+                port: self.config.port,
+            }
         } else {
             let _ = std::fs::remove_file(self.pid_file()); // clean up stale PID
             EngineStatus::Stopped
@@ -318,8 +341,7 @@ impl AiEngine for LlmEngine {
             ));
         }
 
-        std::fs::create_dir_all(&self.data_dir)
-            .map_err(|e| AiError::Io(e.to_string()))?;
+        std::fs::create_dir_all(&self.data_dir).map_err(|e| AiError::Io(e.to_string()))?;
 
         let log = std::fs::OpenOptions::new()
             .create(true)
@@ -329,10 +351,14 @@ impl AiEngine for LlmEngine {
 
         let mut cmd = std::process::Command::new(&self.binary_path);
         cmd.arg("serve")
-            .arg("--port").arg(self.config.port.to_string())
-            .arg("--host").arg(&self.config.host)
-            .arg("--max-seqs").arg(self.config.max_seqs.to_string())
-            .arg("-m").arg(self.config.model.hf_id());
+            .arg("--port")
+            .arg(self.config.port.to_string())
+            .arg("--host")
+            .arg(&self.config.host)
+            .arg("--max-seqs")
+            .arg(self.config.max_seqs.to_string())
+            .arg("-m")
+            .arg(self.config.model.hf_id());
 
         if !self.config.isq.is_empty() {
             cmd.arg("--isq").arg(&self.config.isq);
@@ -347,8 +373,7 @@ impl AiEngine for LlmEngine {
         let pid = child.id();
         std::mem::forget(child); // detach — let the process outlive this handle
 
-        std::fs::write(self.pid_file(), pid.to_string())
-            .map_err(|e| AiError::Io(e.to_string()))?;
+        std::fs::write(self.pid_file(), pid.to_string()).map_err(|e| AiError::Io(e.to_string()))?;
 
         Ok(())
     }

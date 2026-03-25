@@ -45,20 +45,20 @@ impl AppStatus {
     /// Short human-readable label for the status.
     pub fn label(&self) -> &'static str {
         match self {
-            Self::Running    => "Running",
-            Self::Stopped    => "Stopped",
+            Self::Running => "Running",
+            Self::Stopped => "Stopped",
             Self::Installing => "Installing",
-            Self::Error(_)   => "Error",
+            Self::Error(_) => "Error",
         }
     }
 
     /// CSS color variable for the status badge.
     pub fn css_color(&self) -> &'static str {
         match self {
-            Self::Running    => "var(--fs-color-success, #22c55e)",
-            Self::Stopped    => "var(--fs-color-text-muted, #6b7280)",
+            Self::Running => "var(--fs-color-success, #22c55e)",
+            Self::Stopped => "var(--fs-color-text-muted, #6b7280)",
             Self::Installing => "var(--fs-color-warning, #f59e0b)",
-            Self::Error(_)   => "var(--fs-color-danger, #ef4444)",
+            Self::Error(_) => "var(--fs-color-danger, #ef4444)",
         }
     }
 }
@@ -125,13 +125,21 @@ impl ContainerManager {
 }
 
 impl Default for ContainerManager {
-    fn default() -> Self { Self::with_noop() }
+    fn default() -> Self {
+        Self::with_noop()
+    }
 }
 
 impl FsManager for ContainerManager {
-    fn id(&self)          -> &str { "container" }
-    fn name(&self)        -> &str { "Container App Manager" }
-    fn is_healthy(&self)  -> bool { true }
+    fn id(&self) -> &str {
+        "container"
+    }
+    fn name(&self) -> &str {
+        "Container App Manager"
+    }
+    fn is_healthy(&self) -> bool {
+        true
+    }
 }
 
 /// Error type for the Container App Manager — alias of the shared [`fs_core::ManagerError`].
@@ -143,16 +151,21 @@ fn parse_container_list(raw: &str) -> Vec<Container> {
     raw.lines()
         .filter_map(|line| {
             let mut parts = line.splitn(4, ':');
-            let id      = parts.next()?.to_owned();
-            let name    = parts.next()?.to_owned();
+            let id = parts.next()?.to_owned();
+            let name = parts.next()?.to_owned();
             let version = parts.next()?.to_owned();
-            let status  = match parts.next().unwrap_or("stopped") {
-                "running"    => AppStatus::Running,
+            let status = match parts.next().unwrap_or("stopped") {
+                "running" => AppStatus::Running,
                 "installing" => AppStatus::Installing,
                 other if other.starts_with("error:") => AppStatus::Error(other[6..].into()),
-                _            => AppStatus::Stopped,
+                _ => AppStatus::Stopped,
             };
-            Some(Container { id, name, version, status })
+            Some(Container {
+                id,
+                name,
+                version,
+                status,
+            })
         })
         .collect()
 }

@@ -7,13 +7,16 @@ const DEFAULT_BUS_URL: &str = "http://localhost:8081";
 
 pub struct BusClient {
     base_url: String,
-    client:   reqwest::Client,
+    client: reqwest::Client,
 }
 
 impl BusClient {
     pub fn new() -> Self {
         let base_url = std::env::var("FS_BUS_URL").unwrap_or_else(|_| DEFAULT_BUS_URL.to_string());
-        Self { base_url, client: reqwest::Client::new() }
+        Self {
+            base_url,
+            client: reqwest::Client::new(),
+        }
     }
 
     /// Publish an event on the bus.
@@ -30,12 +33,14 @@ impl BusClient {
 
     /// Publish bot.status.request to ask bot instances to report their status.
     pub async fn request_bot_status(&self) -> Result<()> {
-        self.publish("bot.status.request", "bot-manager", json!({})).await
+        self.publish("bot.status.request", "bot-manager", json!({}))
+            .await
     }
 
     /// Publish bot.broadcast with a message to all groups.
     pub async fn broadcast(&self, message: &str) -> Result<()> {
-        self.publish("bot.broadcast", "bot-manager", json!({ "text": message })).await
+        self.publish("bot.broadcast", "bot-manager", json!({ "text": message }))
+            .await
     }
 
     /// Query recent bus events.

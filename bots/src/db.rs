@@ -1,45 +1,48 @@
 // Bot-manager DB — reads from the bot-runtime's fs-botmanager.db (read-only for most queries).
 
 use anyhow::Result;
-use fs_db::{DbBackend, DbConnection, sea_orm::{Statement, Value}};
+use fs_db::{
+    sea_orm::{Statement, Value},
+    DbBackend, DbConnection,
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 #[derive(Debug)]
 pub struct BotInstance {
-    pub name:       String,
-    pub bot_type:   String,
-    pub data_dir:   String,
-    pub status:     String,
-    pub pid:        Option<i64>,
+    pub name: String,
+    pub bot_type: String,
+    pub data_dir: String,
+    pub status: String,
+    pub pid: Option<i64>,
     pub created_at: String,
 }
 
 #[derive(Debug)]
 pub struct JoinRequest {
-    pub id:         i64,
-    pub platform:   String,
-    pub room_id:    String,
-    pub user_id:    String,
-    pub status:     String,
+    pub id: i64,
+    pub platform: String,
+    pub room_id: String,
+    pub user_id: String,
+    pub status: String,
     pub created_at: String,
 }
 
 #[derive(Debug)]
 pub struct Subscription {
-    pub platform:   String,
-    pub room_id:    String,
-    pub topic:      String,
+    pub platform: String,
+    pub room_id: String,
+    pub topic: String,
     pub created_at: String,
 }
 
 #[derive(Debug)]
 pub struct AuditEntry {
-    pub id:         i64,
+    pub id: i64,
     pub actor_type: String,
-    pub actor_id:   String,
-    pub action:     String,
-    pub result:     String,
+    pub actor_id: String,
+    pub action: String,
+    pub result: String,
     pub created_at: String,
 }
 
@@ -55,8 +58,11 @@ impl<'a> BotDb<'a> {
     }
 
     pub async fn connect(db_path: &str) -> Result<DbConnection> {
-        let backend = DbBackend::Sqlite { path: db_path.to_string() };
-        DbConnection::connect(backend).await
+        let backend = DbBackend::Sqlite {
+            path: db_path.to_string(),
+        };
+        DbConnection::connect(backend)
+            .await
             .map_err(|e| anyhow::anyhow!(e.to_string()))
     }
 
@@ -69,14 +75,16 @@ impl<'a> BotDb<'a> {
         );
         let rows = conn.query_all_raw(stmt).await?;
         rows.into_iter()
-            .map(|r| Ok(BotInstance {
-                name:       r.try_get("", "name")?,
-                bot_type:   r.try_get("", "bot_type")?,
-                data_dir:   r.try_get("", "data_dir")?,
-                status:     r.try_get("", "status")?,
-                pid:        r.try_get("", "pid")?,
-                created_at: r.try_get("", "created_at")?,
-            }))
+            .map(|r| {
+                Ok(BotInstance {
+                    name: r.try_get("", "name")?,
+                    bot_type: r.try_get("", "bot_type")?,
+                    data_dir: r.try_get("", "data_dir")?,
+                    status: r.try_get("", "status")?,
+                    pid: r.try_get("", "pid")?,
+                    created_at: r.try_get("", "created_at")?,
+                })
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e: fs_db::sea_orm::DbErr| anyhow::anyhow!(e.to_string()))
     }
@@ -91,14 +99,16 @@ impl<'a> BotDb<'a> {
         );
         let rows = conn.query_all_raw(stmt).await?;
         rows.into_iter()
-            .map(|r| Ok(JoinRequest {
-                id:         r.try_get("", "id")?,
-                platform:   r.try_get("", "platform")?,
-                room_id:    r.try_get("", "room_id")?,
-                user_id:    r.try_get("", "user_id")?,
-                status:     r.try_get("", "status")?,
-                created_at: r.try_get("", "created_at")?,
-            }))
+            .map(|r| {
+                Ok(JoinRequest {
+                    id: r.try_get("", "id")?,
+                    platform: r.try_get("", "platform")?,
+                    room_id: r.try_get("", "room_id")?,
+                    user_id: r.try_get("", "user_id")?,
+                    status: r.try_get("", "status")?,
+                    created_at: r.try_get("", "created_at")?,
+                })
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e: fs_db::sea_orm::DbErr| anyhow::anyhow!(e.to_string()))
     }
@@ -112,7 +122,9 @@ impl<'a> BotDb<'a> {
             "UPDATE join_requests SET status = $1, resolved_at = datetime('now') WHERE id = $2",
             [Value::from(status), Value::from(id)],
         );
-        let result = conn.execute_raw(stmt).await
+        let result = conn
+            .execute_raw(stmt)
+            .await
             .map_err(|e| anyhow::anyhow!(e.to_string()))?;
         Ok(result.rows_affected() > 0)
     }
@@ -126,12 +138,14 @@ impl<'a> BotDb<'a> {
         );
         let rows = conn.query_all_raw(stmt).await?;
         rows.into_iter()
-            .map(|r| Ok(Subscription {
-                platform:   r.try_get("", "platform")?,
-                room_id:    r.try_get("", "room_id")?,
-                topic:      r.try_get("", "topic")?,
-                created_at: r.try_get("", "created_at")?,
-            }))
+            .map(|r| {
+                Ok(Subscription {
+                    platform: r.try_get("", "platform")?,
+                    room_id: r.try_get("", "room_id")?,
+                    topic: r.try_get("", "topic")?,
+                    created_at: r.try_get("", "created_at")?,
+                })
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e: fs_db::sea_orm::DbErr| anyhow::anyhow!(e.to_string()))
     }
@@ -147,14 +161,16 @@ impl<'a> BotDb<'a> {
         );
         let rows = conn.query_all_raw(stmt).await?;
         rows.into_iter()
-            .map(|r| Ok(AuditEntry {
-                id:         r.try_get("", "id")?,
-                actor_type: r.try_get("", "actor_type")?,
-                actor_id:   r.try_get("", "actor_id")?,
-                action:     r.try_get("", "action")?,
-                result:     r.try_get("", "result")?,
-                created_at: r.try_get("", "created_at")?,
-            }))
+            .map(|r| {
+                Ok(AuditEntry {
+                    id: r.try_get("", "id")?,
+                    actor_type: r.try_get("", "actor_type")?,
+                    actor_id: r.try_get("", "actor_id")?,
+                    action: r.try_get("", "action")?,
+                    result: r.try_get("", "result")?,
+                    created_at: r.try_get("", "created_at")?,
+                })
+            })
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e: fs_db::sea_orm::DbErr| anyhow::anyhow!(e.to_string()))
     }

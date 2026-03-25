@@ -39,13 +39,13 @@ impl ContributorStatus {
     fn to_cache(&self, checked_at_secs: u64) -> ContributorCache {
         match self {
             Self::Authenticated { github_user } => ContributorCache {
-                authenticated:   true,
-                github_user:     Some(github_user.clone()),
+                authenticated: true,
+                github_user: Some(github_user.clone()),
                 checked_at_secs,
             },
             _ => ContributorCache {
-                authenticated:   false,
-                github_user:     None,
+                authenticated: false,
+                github_user: None,
                 checked_at_secs,
             },
         }
@@ -56,8 +56,8 @@ impl ContributorStatus {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ContributorCache {
-    authenticated:   bool,
-    github_user:     Option<String>,
+    authenticated: bool,
+    github_user: Option<String>,
     /// Unix timestamp (seconds) when the check was last performed.
     checked_at_secs: u64,
 }
@@ -143,9 +143,12 @@ impl GitContributorCheck {
         let result = std::process::Command::new("ssh")
             .args([
                 "-T",
-                "-o", "StrictHostKeyChecking=no",
-                "-o", "ConnectTimeout=8",
-                "-o", "BatchMode=yes", // never prompt for passphrase
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "ConnectTimeout=8",
+                "-o",
+                "BatchMode=yes", // never prompt for passphrase
                 "git@github.com",
             ])
             .output();
@@ -154,7 +157,9 @@ impl GitContributorCheck {
             Ok(out) => {
                 let text = String::from_utf8_lossy(&out.stderr);
                 if let Some(username) = Self::parse_username(&text) {
-                    ContributorStatus::Authenticated { github_user: username }
+                    ContributorStatus::Authenticated {
+                        github_user: username,
+                    }
                 } else {
                     ContributorStatus::NotAuthenticated
                 }
@@ -170,7 +175,11 @@ impl GitContributorCheck {
     fn parse_username(output: &str) -> Option<String> {
         let line = output.lines().find(|l| l.starts_with("Hi "))?;
         let name = line.strip_prefix("Hi ")?.split('!').next()?.trim();
-        if name.is_empty() { None } else { Some(name.to_string()) }
+        if name.is_empty() {
+            None
+        } else {
+            Some(name.to_string())
+        }
     }
 
     /// Clears the cache so the next call to `cached()` returns `None`,
@@ -188,8 +197,8 @@ impl GitContributorCheck {
     /// The file is written to `Node/i18n/{lang_code}/ui.toml` within the clone,
     /// then committed and pushed via `GitRepoPort` (backed by `GixRepo`).
     pub fn push_translation(
-        repo_path:    &std::path::Path,
-        lang_code:    &str,
+        repo_path: &std::path::Path,
+        lang_code: &str,
         toml_content: &str,
     ) -> Result<String, String> {
         let repo = GixRepo::open(repo_path).map_err(|e| e.to_string())?;
@@ -200,9 +209,9 @@ impl GitContributorCheck {
 /// Core push logic — uses only `GitRepoPort`, no gix types.
 /// Separated from `push_translation` to allow testing with a mock `GitRepoPort`.
 fn push_translation_with(
-    repo:         &impl GitRepoPort,
-    repo_path:    &std::path::Path,
-    lang_code:    &str,
+    repo: &impl GitRepoPort,
+    repo_path: &std::path::Path,
+    lang_code: &str,
     toml_content: &str,
 ) -> Result<String, String> {
     // Write the file to disk so the working tree stays in sync.
@@ -216,9 +225,7 @@ fn push_translation_with(
         .map_err(|e| e.to_string())?;
 
     // 2. Build updated tree.
-    let (parent_id, root_tree) = repo
-        .head_commit_and_tree()
-        .map_err(|e| e.to_string())?;
+    let (parent_id, root_tree) = repo.head_commit_and_tree().map_err(|e| e.to_string())?;
 
     let path_components = ["Node", "i18n", lang_code, "ui.toml"];
     let new_tree = repo
@@ -227,17 +234,21 @@ fn push_translation_with(
 
     // 3. Create commit.
     let author = CommitAuthor {
-        name:  repo.config_string("user.name") .unwrap_or_else(|| "FreeSynergy".into()),
-        email: repo.config_string("user.email").unwrap_or_else(|| "noreply@freesynergy.net".into()),
+        name: repo
+            .config_string("user.name")
+            .unwrap_or_else(|| "FreeSynergy".into()),
+        email: repo
+            .config_string("user.email")
+            .unwrap_or_else(|| "noreply@freesynergy.net".into()),
     };
-    let message   = format!("i18n: add/update {lang_code} translation");
+    let message = format!("i18n: add/update {lang_code} translation");
     let commit_id = repo
         .create_commit(&author, &message, new_tree, parent_id)
         .map_err(|e| e.to_string())?;
 
     // 4. Push to origin.
     let head_ref = repo.head_ref().map_err(|e| e.to_string())?;
-    let refspec  = format!("{head_ref}:{head_ref}");
+    let refspec = format!("{head_ref}:{head_ref}");
     repo.push_to_origin(&refspec).map_err(|e| e.to_string())?;
 
     Ok(format!(

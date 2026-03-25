@@ -52,14 +52,18 @@ struct BotCli;
 
 impl BotCli {
     fn db_path(&self) -> String {
-        if let Ok(p) = std::env::var("FS_BOT_DB") { return p; }
+        if let Ok(p) = std::env::var("FS_BOT_DB") {
+            return p;
+        }
         let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
         format!("{home}/.local/share/fsn/bots/main/fs-botmanager.db")
     }
 
     async fn open_db(&self) -> Result<fs_db::DbConnection> {
         let path = self.db_path();
-        db::connect(&path).await.with_context(|| format!("Cannot open bot DB at '{path}'"))
+        db::connect(&path)
+            .await
+            .with_context(|| format!("Cannot open bot DB at '{path}'"))
     }
 
     async fn status(&self) -> Result<()> {
@@ -72,8 +76,14 @@ impl BotCli {
         println!("{:<20} {:<15} {:<10} {}", "Name", "Type", "Status", "PID");
         println!("{}", "-".repeat(60));
         for inst in &instances {
-            let pid = inst.pid.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
-            println!("{:<20} {:<15} {:<10} {}", inst.name, inst.bot_type, inst.status, pid);
+            let pid = inst
+                .pid
+                .map(|p| p.to_string())
+                .unwrap_or_else(|| "-".into());
+            println!(
+                "{:<20} {:<15} {:<10} {}",
+                inst.name, inst.bot_type, inst.status, pid
+            );
         }
         println!("\n{} instance(s) total.", instances.len());
 
@@ -103,10 +113,16 @@ impl BotCli {
             println!("No pending join requests.");
             return Ok(());
         }
-        println!("{:<6} {:<15} {:<30} {:<20} {}", "ID", "Platform", "Room", "User", "Waiting since");
+        println!(
+            "{:<6} {:<15} {:<30} {:<20} {}",
+            "ID", "Platform", "Room", "User", "Waiting since"
+        );
         println!("{}", "-".repeat(90));
         for r in &requests {
-            println!("{:<6} {:<15} {:<30} {:<20} {}", r.id, r.platform, r.room_id, r.user_id, r.created_at);
+            println!(
+                "{:<6} {:<15} {:<30} {:<20} {}",
+                r.id, r.platform, r.room_id, r.user_id, r.created_at
+            );
         }
         println!("\n{} pending request(s).", requests.len());
         Ok(())
@@ -115,9 +131,11 @@ impl BotCli {
     async fn gatekeeper_resolve(&self, id: i64, approve: bool) -> Result<()> {
         let action = if approve { "approved" } else { "denied" };
         let path = self.db_path();
-        let rw_pool = db::connect(&path).await
+        let rw_pool = db::connect(&path)
+            .await
             .with_context(|| format!("Cannot open bot DB at '{path}' (rw)"))?;
-        let ok = db::approve_request(&rw_pool, id, approve).await
+        let ok = db::approve_request(&rw_pool, id, approve)
+            .await
             .with_context(|| format!("Failed to {action} request #{id}"))?;
         if ok {
             println!("Request #{id} {action}.");
@@ -134,10 +152,16 @@ impl BotCli {
             println!("No audit entries.");
             return Ok(());
         }
-        println!("{:<6} {:<8} {:<20} {:<30} {:<10} {}", "ID", "Actor", "Actor ID", "Action", "Result", "When");
+        println!(
+            "{:<6} {:<8} {:<20} {:<30} {:<10} {}",
+            "ID", "Actor", "Actor ID", "Action", "Result", "When"
+        );
         println!("{}", "-".repeat(100));
         for e in &entries {
-            println!("{:<6} {:<8} {:<20} {:<30} {:<10} {}", e.id, e.actor_type, e.actor_id, e.action, e.result, e.created_at);
+            println!(
+                "{:<6} {:<8} {:<20} {:<30} {:<10} {}",
+                e.id, e.actor_type, e.actor_id, e.action, e.result, e.created_at
+            );
         }
         Ok(())
     }

@@ -16,8 +16,10 @@
 
 use std::path::{Path, PathBuf};
 
-use fs_core::{FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase, parse_manifest_sections};
 pub use fs_core::RepositoryError;
+use fs_core::{
+    parse_manifest_sections, FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase,
+};
 
 // ── CursorRepository ──────────────────────────────────────────────────────────
 
@@ -37,10 +39,18 @@ pub struct CursorRepository {
 }
 
 impl Repository for CursorRepository {
-    fn id(&self) -> &str { &self.id }
-    fn builtin(&self) -> bool { self.builtin }
-    fn enabled(&self) -> bool { self.enabled }
-    fn set_enabled(&mut self, enabled: bool) { self.enabled = enabled; }
+    fn id(&self) -> &str {
+        &self.id
+    }
+    fn builtin(&self) -> bool {
+        self.builtin
+    }
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+    fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
 }
 
 // ── CursorSlot ────────────────────────────────────────────────────────────────
@@ -88,77 +98,114 @@ impl CursorSlot {
     /// The filename base (without `.svg`) expected in a cursor set directory.
     pub fn filename(self) -> &'static str {
         match self {
-            Self::Default      => "default",
-            Self::Pointer      => "pointer",
-            Self::NotAllowed   => "not-allowed",
-            Self::Busy         => "busy",
-            Self::Progress     => "progress",
-            Self::Text         => "text",
+            Self::Default => "default",
+            Self::Pointer => "pointer",
+            Self::NotAllowed => "not-allowed",
+            Self::Busy => "busy",
+            Self::Progress => "progress",
+            Self::Text => "text",
             Self::TextVertical => "text-vertical",
-            Self::Move         => "move",
-            Self::Grab         => "grab",
-            Self::Grabbing     => "grabbing",
-            Self::Crosshair    => "crosshair",
-            Self::ZoomIn       => "zoom-in",
-            Self::ZoomOut      => "zoom-out",
-            Self::Help         => "help",
-            Self::ContextMenu  => "context-menu",
-            Self::Alias        => "alias",
-            Self::Cell         => "cell",
-            Self::DropOk       => "drop-ok",
-            Self::DropDeny     => "drop-deny",
-            Self::ResizeN      => "resize-n",
-            Self::ResizeS      => "resize-s",
-            Self::ResizeE      => "resize-e",
-            Self::ResizeW      => "resize-w",
-            Self::ResizeNs     => "resize-ns",
-            Self::ResizeEw     => "resize-ew",
-            Self::ResizeNe     => "resize-ne",
-            Self::ResizeNw     => "resize-nw",
-            Self::ResizeSe     => "resize-se",
-            Self::ResizeSw     => "resize-sw",
-            Self::ResizeNesw   => "resize-nesw",
-            Self::ResizeNwse   => "resize-nwse",
+            Self::Move => "move",
+            Self::Grab => "grab",
+            Self::Grabbing => "grabbing",
+            Self::Crosshair => "crosshair",
+            Self::ZoomIn => "zoom-in",
+            Self::ZoomOut => "zoom-out",
+            Self::Help => "help",
+            Self::ContextMenu => "context-menu",
+            Self::Alias => "alias",
+            Self::Cell => "cell",
+            Self::DropOk => "drop-ok",
+            Self::DropDeny => "drop-deny",
+            Self::ResizeN => "resize-n",
+            Self::ResizeS => "resize-s",
+            Self::ResizeE => "resize-e",
+            Self::ResizeW => "resize-w",
+            Self::ResizeNs => "resize-ns",
+            Self::ResizeEw => "resize-ew",
+            Self::ResizeNe => "resize-ne",
+            Self::ResizeNw => "resize-nw",
+            Self::ResizeSe => "resize-se",
+            Self::ResizeSw => "resize-sw",
+            Self::ResizeNesw => "resize-nesw",
+            Self::ResizeNwse => "resize-nwse",
         }
     }
 
     /// Default hotspot for this slot. Most cursors use (0, 0).
     pub fn default_hotspot(self) -> (u32, u32) {
         match self {
-            Self::Pointer   => (6, 0),
+            Self::Pointer => (6, 0),
             Self::Crosshair => (12, 12),
-            Self::Grabbing  => (12, 8),
-            _               => (0, 0),
+            Self::Grabbing => (12, 8),
+            _ => (0, 0),
         }
     }
 
     /// All 31 slots in standard order.
     pub fn all() -> &'static [CursorSlot] {
         &[
-            Self::Default, Self::Pointer, Self::NotAllowed, Self::Busy,
-            Self::Progress, Self::Text, Self::TextVertical, Self::Move,
-            Self::Grab, Self::Grabbing, Self::Crosshair, Self::ZoomIn,
-            Self::ZoomOut, Self::Help, Self::ContextMenu, Self::Alias,
-            Self::Cell, Self::DropOk, Self::DropDeny, Self::ResizeN,
-            Self::ResizeS, Self::ResizeE, Self::ResizeW, Self::ResizeNs,
-            Self::ResizeEw, Self::ResizeNe, Self::ResizeNw, Self::ResizeSe,
-            Self::ResizeSw, Self::ResizeNesw, Self::ResizeNwse,
+            Self::Default,
+            Self::Pointer,
+            Self::NotAllowed,
+            Self::Busy,
+            Self::Progress,
+            Self::Text,
+            Self::TextVertical,
+            Self::Move,
+            Self::Grab,
+            Self::Grabbing,
+            Self::Crosshair,
+            Self::ZoomIn,
+            Self::ZoomOut,
+            Self::Help,
+            Self::ContextMenu,
+            Self::Alias,
+            Self::Cell,
+            Self::DropOk,
+            Self::DropDeny,
+            Self::ResizeN,
+            Self::ResizeS,
+            Self::ResizeE,
+            Self::ResizeW,
+            Self::ResizeNs,
+            Self::ResizeEw,
+            Self::ResizeNe,
+            Self::ResizeNw,
+            Self::ResizeSe,
+            Self::ResizeSw,
+            Self::ResizeNesw,
+            Self::ResizeNwse,
         ]
     }
 
     /// Minimum required slots — the cursor set is considered incomplete without these.
     pub fn minimum_required() -> &'static [CursorSlot] {
         &[
-            Self::Default, Self::Pointer, Self::NotAllowed, Self::Busy,
-            Self::Progress, Self::Text, Self::Move, Self::Grab, Self::Grabbing,
-            Self::DropOk, Self::DropDeny, Self::ResizeNs, Self::ResizeEw,
-            Self::ResizeNwse, Self::ResizeNesw,
+            Self::Default,
+            Self::Pointer,
+            Self::NotAllowed,
+            Self::Busy,
+            Self::Progress,
+            Self::Text,
+            Self::Move,
+            Self::Grab,
+            Self::Grabbing,
+            Self::DropOk,
+            Self::DropDeny,
+            Self::ResizeNs,
+            Self::ResizeEw,
+            Self::ResizeNwse,
+            Self::ResizeNesw,
         ]
     }
 
     /// Try to parse a slot from its filename string.
     pub fn from_filename(s: &str) -> Option<Self> {
-        CursorSlot::all().iter().copied().find(|slot| slot.filename() == s)
+        CursorSlot::all()
+            .iter()
+            .copied()
+            .find(|slot| slot.filename() == s)
     }
 }
 
@@ -339,10 +386,7 @@ pub struct CursorManager {
 }
 
 impl CursorManager {
-    pub fn new(
-        cursor_root: impl Into<PathBuf>,
-        repositories: Vec<CursorRepository>,
-    ) -> Self {
+    pub fn new(cursor_root: impl Into<PathBuf>, repositories: Vec<CursorRepository>) -> Self {
         Self {
             cursor_root: cursor_root.into(),
             repositories: RepositoryManager::new(repositories),
@@ -368,13 +412,13 @@ impl CursorManager {
                 let path = self.cursor_sets_dir().join(&proto.base.id);
                 let present_slots = detect_present_slots(&path);
                 CursorSet {
-                    id:             proto.base.id,
-                    name:           proto.base.name,
-                    description:    proto.base.description,
-                    author:         proto.author,
-                    version:        proto.version,
+                    id: proto.base.id,
+                    name: proto.base.name,
+                    description: proto.base.description,
+                    author: proto.author,
+                    version: proto.version,
                     source_repo_id: proto.base.source_repo_id,
-                    builtin:        proto.base.builtin,
+                    builtin: proto.base.builtin,
                     path,
                     present_slots,
                 }
@@ -389,18 +433,24 @@ impl CursorManager {
         let set_dir = self.cursor_sets_dir().join(set_id);
         let manifest_path = set_dir.join("manifest.toml");
 
-        let hotspot = read_hotspot_override(&manifest_path, slot)
-            .unwrap_or_else(|| slot.default_hotspot());
+        let hotspot =
+            read_hotspot_override(&manifest_path, slot).unwrap_or_else(|| slot.default_hotspot());
 
         // Check for animation first.
         if let Some(anim) = read_animation(&manifest_path, &set_dir, slot) {
-            return Some(ResolvedCursor::Animated { animation: anim, hotspot });
+            return Some(ResolvedCursor::Animated {
+                animation: anim,
+                hotspot,
+            });
         }
 
         // Fall back to static SVG.
         let svg_path = set_dir.join(format!("{}.svg", slot.filename()));
         if svg_path.exists() {
-            return Some(ResolvedCursor::Static { path: svg_path, hotspot });
+            return Some(ResolvedCursor::Static {
+                path: svg_path,
+                hotspot,
+            });
         }
 
         None
@@ -425,14 +475,12 @@ impl CursorManager {
         }
 
         let set_dir = self.cursor_sets_dir().join(&draft.id);
-        std::fs::create_dir_all(&set_dir)
-            .map_err(|e| CursorError::IoError(e.to_string()))?;
+        std::fs::create_dir_all(&set_dir).map_err(|e| CursorError::IoError(e.to_string()))?;
 
         // Write static SVG slots.
         for (slot, svg_content) in &draft.slots {
             let path = set_dir.join(format!("{}.svg", slot.filename()));
-            std::fs::write(&path, svg_content)
-                .map_err(|e| CursorError::IoError(e.to_string()))?;
+            std::fs::write(&path, svg_content).map_err(|e| CursorError::IoError(e.to_string()))?;
         }
 
         // Write animation frames.
@@ -454,8 +502,12 @@ impl CursorManager {
 }
 
 impl FsManager for CursorManager {
-    fn id(&self)   -> &str { "cursor" }
-    fn name(&self) -> &str { "Cursor Manager" }
+    fn id(&self) -> &str {
+        "cursor"
+    }
+    fn name(&self) -> &str {
+        "Cursor Manager"
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -514,7 +566,11 @@ fn read_hotspot_override(manifest_path: &Path, slot: CursorSlot) -> Option<(u32,
 }
 
 /// Reads animation data for one slot from the manifest, if present.
-fn read_animation(manifest_path: &Path, set_dir: &Path, slot: CursorSlot) -> Option<CursorAnimation> {
+fn read_animation(
+    manifest_path: &Path,
+    set_dir: &Path,
+    slot: CursorSlot,
+) -> Option<CursorAnimation> {
     let content = std::fs::read_to_string(manifest_path).ok()?;
     let section_header = format!("[animated.{}]", slot.filename());
     let mut in_section = false;
@@ -556,11 +612,16 @@ fn read_animation(manifest_path: &Path, set_dir: &Path, slot: CursorSlot) -> Opt
         return None;
     }
 
-    Some(CursorAnimation { frames, frame_ms, loop_animation: loop_anim })
+    Some(CursorAnimation {
+        frames,
+        frame_ms,
+        loop_animation: loop_anim,
+    })
 }
 
 fn parse_toml_string_array(s: &str) -> Vec<String> {
-    s.trim_matches('[').trim_matches(']')
+    s.trim_matches('[')
+        .trim_matches(']')
         .split(',')
         .map(|v| v.trim().trim_matches('"').to_string())
         .filter(|v| !v.is_empty())
@@ -568,7 +629,8 @@ fn parse_toml_string_array(s: &str) -> Vec<String> {
 }
 
 fn parse_toml_u32_array(s: &str) -> Vec<u32> {
-    s.trim_matches('[').trim_matches(']')
+    s.trim_matches('[')
+        .trim_matches(']')
         .split(',')
         .filter_map(|v| v.trim().parse().ok())
         .collect()
@@ -579,8 +641,8 @@ fn parse_toml_u32_array(s: &str) -> Vec<u32> {
 /// Parsed proto for one cursor set section — common fields via [`SetBase`],
 /// cursor-specific extras (`author`, `version`) appended.
 struct CursorSetProto {
-    base:    SetBase,
-    author:  String,
+    base: SetBase,
+    author: String,
     version: String,
 }
 
@@ -590,8 +652,8 @@ struct CursorSetProto {
 /// all common fields to [`SetBase::apply_field`].
 #[derive(Default)]
 struct CursorSetBuilder {
-    base:    SetBase,
-    author:  String,
+    base: SetBase,
+    author: String,
     version: String,
 }
 
@@ -600,16 +662,18 @@ impl ManifestBuilder for CursorSetBuilder {
 
     fn apply_field(&mut self, key: &str, val: String) {
         match key {
-            "author"  => self.author  = val,
+            "author" => self.author = val,
             "version" => self.version = val,
-            _         => { self.base.apply_field(key, val); }
+            _ => {
+                self.base.apply_field(key, val);
+            }
         }
     }
 
     fn build(self) -> Option<CursorSetProto> {
         self.base.is_valid().then(|| CursorSetProto {
-            base:    self.base,
-            author:  self.author,
+            base: self.base,
+            author: self.author,
             version: self.version,
         })
     }
