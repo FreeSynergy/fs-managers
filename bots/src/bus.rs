@@ -44,6 +44,7 @@ impl BusClient {
     }
 
     /// Query recent bus events.
+    #[allow(dead_code)]
     pub async fn recent_events(&self, limit: u32) -> Result<Vec<Value>> {
         let url = format!("{}/api/bus/events?limit={limit}", self.base_url);
         let resp = self.client.get(&url).send().await?.error_for_status()?;

@@ -6,6 +6,7 @@
 //   - Resolve cursor files by slot and animation state
 //   - Activate a cursor set (marks it as the active set for the current theme)
 //   - Accept a CursorSetDraft for saving/publishing new sets
+#![deny(clippy::all, clippy::pedantic, warnings)]
 //
 // Repository management uses fs_core::RepositoryManager<CursorRepository> —
 // the same generic abstraction shared by the Store, Icon Manager, and Bundle Manager.
@@ -96,6 +97,7 @@ pub enum CursorSlot {
 
 impl CursorSlot {
     /// The filename base (without `.svg`) expected in a cursor set directory.
+    #[must_use]
     pub fn filename(self) -> &'static str {
         match self {
             Self::Default => "default",
@@ -133,6 +135,7 @@ impl CursorSlot {
     }
 
     /// Default hotspot for this slot. Most cursors use (0, 0).
+    #[must_use]
     pub fn default_hotspot(self) -> (u32, u32) {
         match self {
             Self::Pointer => (6, 0),
@@ -143,6 +146,7 @@ impl CursorSlot {
     }
 
     /// All 31 slots in standard order.
+    #[must_use]
     pub fn all() -> &'static [CursorSlot] {
         &[
             Self::Default,
@@ -180,6 +184,7 @@ impl CursorSlot {
     }
 
     /// Minimum required slots — the cursor set is considered incomplete without these.
+    #[must_use]
     pub fn minimum_required() -> &'static [CursorSlot] {
         &[
             Self::Default,
@@ -201,6 +206,7 @@ impl CursorSlot {
     }
 
     /// Try to parse a slot from its filename string.
+    #[must_use]
     pub fn from_filename(s: &str) -> Option<Self> {
         CursorSlot::all()
             .iter()
@@ -257,6 +263,7 @@ pub struct CursorSet {
 
 impl CursorSet {
     /// Returns true if all minimum required slots are present.
+    #[must_use]
     pub fn is_complete(&self) -> bool {
         CursorSlot::minimum_required()
             .iter()
@@ -264,6 +271,7 @@ impl CursorSet {
     }
 
     /// Returns the slots from the minimum set that are missing.
+    #[must_use]
     pub fn missing_required(&self) -> Vec<CursorSlot> {
         CursorSlot::minimum_required()
             .iter()
@@ -306,6 +314,7 @@ pub struct AnimationDraft {
 
 impl CursorSetDraft {
     /// Returns which of the minimum required slots are still missing.
+    #[must_use]
     pub fn missing_required(&self) -> Vec<CursorSlot> {
         let filled: Vec<CursorSlot> = self.slots.iter().map(|(s, _)| *s).collect();
         CursorSlot::minimum_required()
@@ -319,15 +328,17 @@ impl CursorSetDraft {
     ///
     /// The rendered string is written to `<set_dir>/manifest.toml` by
     /// [`CursorManager::save_draft`].
+    #[must_use]
     pub fn render_manifest(&self, source_repo_id: &str) -> String {
+        use std::fmt::Write as _;
         let mut out = String::new();
 
-        out.push_str(&format!("id          = \"{}\"\n", self.id));
-        out.push_str(&format!("name        = \"{}\"\n", self.name));
-        out.push_str(&format!("description = \"{}\"\n", self.description));
-        out.push_str(&format!("author      = \"{}\"\n", self.author));
-        out.push_str(&format!("version     = \"{}\"\n", self.version));
-        out.push_str(&format!("source_repo_id = \"{source_repo_id}\"\n"));
+        let _ = writeln!(out, "id          = \"{}\"", self.id);
+        let _ = writeln!(out, "name        = \"{}\"", self.name);
+        let _ = writeln!(out, "description = \"{}\"", self.description);
+        let _ = writeln!(out, "author      = \"{}\"", self.author);
+        let _ = writeln!(out, "version     = \"{}\"", self.version);
+        let _ = writeln!(out, "source_repo_id = \"{source_repo_id}\"");
         out.push_str("builtin     = false\n");
 
         let non_default_hotspots: Vec<_> = self
@@ -339,12 +350,12 @@ impl CursorSetDraft {
         if !non_default_hotspots.is_empty() {
             out.push_str("\n[hotspots]\n");
             for (slot, (x, y)) in &non_default_hotspots {
-                out.push_str(&format!("{} = [{x}, {y}]\n", slot.filename()));
+                let _ = writeln!(out, "{} = [{x}, {y}]", slot.filename());
             }
         }
 
         for (slot, anim) in &self.animations {
-            out.push_str(&format!("\n[animated.{}]\n", slot.filename()));
+            let _ = writeln!(out, "\n[animated.{}]", slot.filename());
 
             let frame_filenames: Vec<String> = (1..=anim.frames.len())
                 .map(|i| format!("{}-frame-{i}.svg", slot.filename()))
@@ -354,16 +365,16 @@ impl CursorSetDraft {
                 .map(|f| format!("\"{f}\""))
                 .collect::<Vec<_>>()
                 .join(", ");
-            out.push_str(&format!("frames   = [{frames_toml}]\n"));
+            let _ = writeln!(out, "frames   = [{frames_toml}]");
 
             let ms_toml = anim
                 .frame_ms
                 .iter()
-                .map(|ms| ms.to_string())
+                .map(ToString::to_string)
                 .collect::<Vec<_>>()
                 .join(", ");
-            out.push_str(&format!("frame_ms = [{ms_toml}]\n"));
-            out.push_str(&format!("loop     = {}\n", anim.loop_animation));
+            let _ = writeln!(out, "frame_ms = [{ms_toml}]");
+            let _ = writeln!(out, "loop     = {}", anim.loop_animation);
         }
 
         out
@@ -399,11 +410,11 @@ impl CursorManager {
     }
 
     /// Returns all installed cursor sets.
+    #[must_use]
     pub fn sets(&self) -> Vec<CursorSet> {
         let manifest_path = self.cursor_root.join("manifest.toml");
-        let content = match std::fs::read_to_string(&manifest_path) {
-            Ok(c) => c,
-            Err(_) => return vec![],
+        let Ok(content) = std::fs::read_to_string(&manifest_path) else {
+            return vec![];
         };
 
         parse_manifest_cursor_sets(&content)
@@ -429,6 +440,7 @@ impl CursorManager {
     /// Resolves a single cursor slot from the given set.
     ///
     /// Returns `None` if the slot file is missing (caller should apply CSS fallback).
+    #[must_use]
     pub fn resolve(&self, set_id: &str, slot: CursorSlot) -> Option<ResolvedCursor> {
         let set_dir = self.cursor_sets_dir().join(set_id);
         let manifest_path = set_dir.join("manifest.toml");
@@ -459,6 +471,11 @@ impl CursorManager {
     /// Saves a [`CursorSetDraft`] to disk (writes SVG files + manifest.toml).
     ///
     /// Does not push to any repository — that is handled by the git layer above.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CursorError::InvalidDraft`] if required fields are empty, or
+    /// [`CursorError::IoError`] on filesystem errors.
     pub fn save_draft(
         &self,
         draft: &CursorSetDraft,
@@ -502,10 +519,10 @@ impl CursorManager {
 }
 
 impl FsManager for CursorManager {
-    fn id(&self) -> &str {
+    fn id(&self) -> &'static str {
         "cursor"
     }
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Cursor Manager"
     }
 }
@@ -518,7 +535,7 @@ fn detect_present_slots(set_dir: &Path) -> Vec<CursorSlot> {
         return vec![];
     };
     let mut slots = Vec::new();
-    for entry in entries.filter_map(|e| e.ok()) {
+    for entry in entries.filter_map(Result::ok) {
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) != Some("svg") {
             continue;
@@ -671,7 +688,7 @@ impl ManifestBuilder for CursorSetBuilder {
     }
 
     fn build(self) -> Option<CursorSetProto> {
-        self.base.is_valid().then(|| CursorSetProto {
+        self.base.is_valid().then_some(CursorSetProto {
             base: self.base,
             author: self.author,
             version: self.version,

@@ -1,3 +1,4 @@
+#![deny(clippy::all, clippy::pedantic, warnings)]
 // FreeSynergy Container App Manager
 //
 // Responsibilities:
@@ -23,6 +24,7 @@ pub struct Container {
 }
 
 impl Container {
+    #[must_use]
     pub fn is_running(&self) -> bool {
         self.status == AppStatus::Running
     }
@@ -38,11 +40,13 @@ pub enum AppStatus {
 }
 
 impl AppStatus {
+    #[must_use]
     pub fn is_busy(&self) -> bool {
         matches!(self, Self::Installing | Self::Error(_))
     }
 
     /// Short human-readable label for the status.
+    #[must_use]
     pub fn label(&self) -> &'static str {
         match self {
             Self::Running => "Running",
@@ -53,6 +57,7 @@ impl AppStatus {
     }
 
     /// CSS color variable for the status badge.
+    #[must_use]
     pub fn css_color(&self) -> &'static str {
         match self {
             Self::Running => "var(--fs-color-success, #22c55e)",
@@ -69,7 +74,7 @@ impl std::fmt::Display for AppStatus {
     }
 }
 
-/// Manages containerized applications for the FreeSynergy ecosystem.
+/// Manages containerized applications for the `FreeSynergy` ecosystem.
 pub struct ContainerManager {
     store: Arc<dyn ManagerStore>,
 }
@@ -81,6 +86,7 @@ impl ContainerManager {
     }
 
     /// Create a manager with a no-op store (test / offline use).
+    #[must_use]
     pub fn with_noop() -> Self {
         Self::new(Arc::new(NoopStore))
     }
@@ -88,6 +94,7 @@ impl ContainerManager {
     /// Returns all installed apps and their current status.
     ///
     /// Reads the serialized app list from `"container.installed"` in the store.
+    #[must_use]
     pub fn installed(&self) -> Vec<Container> {
         // The store holds a newline-separated list of "id:name:version:status" entries.
         // A real implementation would use a proper DB or structured format.
@@ -98,6 +105,10 @@ impl ContainerManager {
     }
 
     /// Installs a container app by ID. Requires Store write permission.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the installation fails.
     pub fn install(&self, app_id: &str) -> Result<(), ContainerError> {
         // TODO: pull from Store catalog, deploy via Podman Quadlets
         let _ = (app_id, &self.store);
@@ -105,6 +116,10 @@ impl ContainerManager {
     }
 
     /// Removes an installed app. Requires Store write permission.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if removal fails.
     pub fn remove(&self, app_id: &str) -> Result<(), ContainerError> {
         // TODO: stop container, remove Quadlet, update Store
         let _ = (app_id, &self.store);
@@ -112,12 +127,20 @@ impl ContainerManager {
     }
 
     /// Starts a stopped app.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the app cannot be started.
     pub fn start(&self, app_id: &str) -> Result<(), ContainerError> {
         let _ = (app_id, &self.store);
         Ok(())
     }
 
     /// Stops a running app.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the app cannot be stopped.
     pub fn stop(&self, app_id: &str) -> Result<(), ContainerError> {
         let _ = (app_id, &self.store);
         Ok(())
@@ -131,10 +154,10 @@ impl Default for ContainerManager {
 }
 
 impl FsManager for ContainerManager {
-    fn id(&self) -> &str {
+    fn id(&self) -> &'static str {
         "container"
     }
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Container App Manager"
     }
     fn is_healthy(&self) -> bool {

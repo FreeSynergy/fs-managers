@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "language",
+    # "language",  # blocked: requires fs-i18n (planned Phase C12)
     "theme",
     "container",
     "icons",

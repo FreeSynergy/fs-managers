@@ -1,3 +1,4 @@
+#![deny(clippy::all, clippy::pedantic, warnings)]
 // fs-bot — BotManager CLI for FreeSynergy
 //
 // Commands:
@@ -51,7 +52,7 @@ async fn main() -> Result<()> {
 struct BotCli;
 
 impl BotCli {
-    fn db_path(&self) -> String {
+    fn db_path() -> String {
         if let Ok(p) = std::env::var("FS_BOT_DB") {
             return p;
         }
@@ -60,7 +61,7 @@ impl BotCli {
     }
 
     async fn open_db(&self) -> Result<fs_db::DbConnection> {
-        let path = self.db_path();
+        let path = Self::db_path();
         db::connect(&path)
             .await
             .with_context(|| format!("Cannot open bot DB at '{path}'"))
@@ -73,13 +74,10 @@ impl BotCli {
             println!("No bot instances registered.");
             return Ok(());
         }
-        println!("{:<20} {:<15} {:<10} {}", "Name", "Type", "Status", "PID");
+        println!("{:<20} {:<15} {:<10} PID", "Name", "Type", "Status");
         println!("{}", "-".repeat(60));
         for inst in &instances {
-            let pid = inst
-                .pid
-                .map(|p| p.to_string())
-                .unwrap_or_else(|| "-".into());
+            let pid = inst.pid.map_or_else(|| "-".into(), |p| p.to_string());
             println!(
                 "{:<20} {:<15} {:<10} {}",
                 inst.name, inst.bot_type, inst.status, pid
@@ -114,8 +112,8 @@ impl BotCli {
             return Ok(());
         }
         println!(
-            "{:<6} {:<15} {:<30} {:<20} {}",
-            "ID", "Platform", "Room", "User", "Waiting since"
+            "{:<6} {:<15} {:<30} {:<20} Waiting since",
+            "ID", "Platform", "Room", "User"
         );
         println!("{}", "-".repeat(90));
         for r in &requests {
@@ -130,7 +128,7 @@ impl BotCli {
 
     async fn gatekeeper_resolve(&self, id: i64, approve: bool) -> Result<()> {
         let action = if approve { "approved" } else { "denied" };
-        let path = self.db_path();
+        let path = Self::db_path();
         let rw_pool = db::connect(&path)
             .await
             .with_context(|| format!("Cannot open bot DB at '{path}' (rw)"))?;
@@ -153,8 +151,8 @@ impl BotCli {
             return Ok(());
         }
         println!(
-            "{:<6} {:<8} {:<20} {:<30} {:<10} {}",
-            "ID", "Actor", "Actor ID", "Action", "Result", "When"
+            "{:<6} {:<8} {:<20} {:<30} {:<10} When",
+            "ID", "Actor", "Actor ID", "Action", "Result"
         );
         println!("{}", "-".repeat(100));
         for e in &entries {

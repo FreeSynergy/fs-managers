@@ -1,3 +1,4 @@
+#![deny(clippy::all, clippy::pedantic, warnings)]
 // FreeSynergy Theme Manager
 //
 // Responsibilities:
@@ -23,7 +24,8 @@ pub struct Theme {
 }
 
 impl Theme {
-    pub fn css_class(&self) -> &str {
+    #[must_use]
+    pub fn css_class(&self) -> &'static str {
         if self.is_dark {
             "fs-theme-dark"
         } else {
@@ -40,7 +42,7 @@ const BUILTIN_THEMES: &[(&str, &str, bool)] = &[
 
 const DEFAULT_THEME_ID: &str = "fs-dark";
 
-/// Manages the active theme for the FreeSynergy ecosystem.
+/// Manages the active theme for the `FreeSynergy` ecosystem.
 pub struct ThemeManager {
     store: Arc<dyn ManagerStore>,
 }
@@ -52,6 +54,7 @@ impl ThemeManager {
     }
 
     /// Create a manager with a no-op store (test / offline use).
+    #[must_use]
     pub fn with_noop() -> Self {
         Self::new(Arc::new(NoopStore))
     }
@@ -66,6 +69,7 @@ impl ThemeManager {
     }
 
     /// Returns all available themes.
+    #[must_use]
     pub fn available(&self) -> Vec<Theme> {
         BUILTIN_THEMES
             .iter()
@@ -78,6 +82,11 @@ impl ThemeManager {
     }
 
     /// Sets the active theme. Requires Store write permission.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::NotFound`] if the theme ID is unknown, or
+    /// [`ThemeError::StoreError`] if the store write fails.
     pub fn set_active(&self, id: &str) -> Result<(), ThemeError> {
         if Self::find_by_id(id).is_none() {
             return Err(ThemeError::NotFound(id.into()));
@@ -164,10 +173,10 @@ impl SelectableManager for ThemeManager {
 }
 
 impl FsManager for ThemeManager {
-    fn id(&self) -> &str {
+    fn id(&self) -> &'static str {
         "theme"
     }
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Theme Manager"
     }
     fn is_healthy(&self) -> bool {

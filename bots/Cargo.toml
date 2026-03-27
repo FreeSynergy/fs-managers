@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 # Database (via internal FSN abstraction — no direct sqlx/sea-orm deps)
-fs-db  = { path = "../../fs-libs/fs-db", features = ["sqlite"] }
+fs-db  = { path = "../../fs-db", features = ["sqlite"] }
 tokio  = { version = "1", features = ["full"] }
 
 # Serialization

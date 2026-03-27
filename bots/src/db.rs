@@ -12,9 +12,11 @@ use fs_db::{
 pub struct BotInstance {
     pub name: String,
     pub bot_type: String,
+    #[allow(dead_code)]
     pub data_dir: String,
     pub status: String,
     pub pid: Option<i64>,
+    #[allow(dead_code)]
     pub created_at: String,
 }
 
@@ -24,10 +26,12 @@ pub struct JoinRequest {
     pub platform: String,
     pub room_id: String,
     pub user_id: String,
+    #[allow(dead_code)]
     pub status: String,
     pub created_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Subscription {
     pub platform: String,
@@ -129,6 +133,7 @@ impl<'a> BotDb<'a> {
         Ok(result.rows_affected() > 0)
     }
 
+    #[allow(dead_code)]
     pub async fn list_subscriptions(&self) -> Result<Vec<Subscription>> {
         use fs_db::sea_orm::ConnectionTrait;
         let conn = self.conn.inner();

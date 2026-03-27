@@ -6,6 +6,7 @@
 //   - Resolve icon paths by name and variant (light/dark)
 //   - Provide a reusable icon picker for use across all programs
 //
+#![deny(clippy::all, clippy::pedantic, warnings)]
 // Any program that needs an icon picker uses IconManager instead of
 // building its own file browser or hardcoding paths.
 //
@@ -66,7 +67,7 @@ pub struct IconSet {
     pub path: PathBuf,
     /// Number of icons (light variants only; dark variants not counted separately).
     pub icon_count: usize,
-    /// Built-in sets ship with FreeSynergy and cannot be removed.
+    /// Built-in sets ship with `FreeSynergy` and cannot be removed.
     pub builtin: bool,
 }
 
@@ -106,6 +107,10 @@ impl PickedIcon {
     /// The caller chooses the destination (e.g. a program's own assets
     /// directory or a theme folder). The icon file is then independent of
     /// the source set.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IconError::IoError`] if the file cannot be copied.
     pub fn copy_to(&self, target_path: &std::path::Path) -> Result<(), IconError> {
         std::fs::copy(&self.icon.path, target_path)
             .map(|_| ())
@@ -137,11 +142,11 @@ impl IconManager {
     }
 
     /// Returns all installed icon sets with full metadata (path, icon count, …).
+    #[must_use]
     pub fn sets(&self) -> Vec<IconSet> {
         let manifest_path = self.icons_root.join("manifest.toml");
-        let content = match std::fs::read_to_string(&manifest_path) {
-            Ok(c) => c,
-            Err(_) => return vec![],
+        let Ok(content) = std::fs::read_to_string(&manifest_path) else {
+            return vec![];
         };
 
         parse_manifest_sets(&content)
@@ -164,6 +169,7 @@ impl IconManager {
     }
 
     /// Resolves a single icon by set ID and name.
+    #[must_use]
     pub fn resolve(&self, set_id: &str, name: &str, prefer_dark: bool) -> Option<Icon> {
         let set_dir = self.icons_root.join(set_id);
 
@@ -194,6 +200,7 @@ impl IconManager {
 
     /// Returns icons matching the picker filter — used by the icon picker UI
     /// embedded in any program that needs icon selection.
+    #[must_use]
     pub fn pick(&self, filter: &IconPickerFilter) -> Vec<PickedIcon> {
         let sets = self.sets();
         let mut results = Vec::new();
@@ -205,9 +212,8 @@ impl IconManager {
                 }
             }
 
-            let names = match self.list_set(&set.id) {
-                Ok(n) => n,
-                Err(_) => continue,
+            let Ok(names) = self.list_set(&set.id) else {
+                continue;
             };
 
             for name in names {
@@ -227,6 +233,11 @@ impl IconManager {
     }
 
     /// Lists all icon names in a set (light variants only).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`IconError::SetNotFound`] if the set directory does not exist,
+    /// or [`IconError::IoError`] on filesystem errors.
     pub fn list_set(&self, set_id: &str) -> Result<Vec<String>, IconError> {
         let set_dir = self.icons_root.join(set_id);
         if !set_dir.exists() {
@@ -251,10 +262,10 @@ impl IconManager {
 }
 
 impl FsManager for IconManager {
-    fn id(&self) -> &str {
+    fn id(&self) -> &'static str {
         "icons"
     }
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "Icon Manager"
     }
 }
@@ -266,7 +277,7 @@ fn count_icons(set_dir: &std::path::Path) -> usize {
         return 0;
     };
     entries
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
         .filter(|e| {
             let p = e.path();
             p.extension().and_then(|x| x.to_str()) == Some("svg")
@@ -311,7 +322,7 @@ impl ManifestBuilder for IconSetBuilder {
     }
 
     fn build(self) -> Option<IconSetProto> {
-        self.base.is_valid().then(|| IconSetProto {
+        self.base.is_valid().then_some(IconSetProto {
             base: self.base,
             has_dark_variants: self.has_dark_variants,
         })
