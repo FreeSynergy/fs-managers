@@ -10,7 +10,7 @@ path = "src/lib.rs"
 
 [dependencies]
 fs-core = { path = "../../fs-libs/fs-core" }
-fs-i18n = { path = "../../fs-libs/fs-i18n" }
+fs-i18n = { path = "../../fs-i18n" }
 serde = { version = "1", features = ["derive"] }
 toml  = "1"
 gix   = { version = "0.80", default-features = false, features = ["blocking-http-transport-reqwest-rust-tls", "worktree-mutation", "blocking-network-client"] }
