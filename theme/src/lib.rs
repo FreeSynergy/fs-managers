@@ -11,6 +11,8 @@
 use std::sync::Arc;
 
 use fs_core::{FsManager, ManagerStore, NoopStore, SelectableManager};
+use fs_inventory::{InstalledResource, Inventory, ReleaseChannel, ResourceStatus};
+use fs_types::ResourceType;
 
 /// A theme entry as stored and used across all programs.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -82,6 +84,39 @@ impl ThemeManager {
         }
         self.store
             .write_setting("theme.active", id)
+            .map_err(|e| ThemeError::StoreError(e.to_string()))
+    }
+
+    // ── Inventory integration ─────────────────────────────────────────────────
+
+    /// Record a Store theme installation in `fs-inventory`.
+    ///
+    /// Called after a theme package has been downloaded and its files are in
+    /// place.  The theme is marked as [`ResourceStatus::Active`] immediately.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ThemeError::StoreError`] if the inventory write fails.
+    pub async fn install_from_store(
+        &self,
+        inventory: &Inventory,
+        theme_id: &str,
+        version: &str,
+    ) -> Result<(), ThemeError> {
+        let resource = InstalledResource {
+            id: theme_id.to_owned(),
+            resource_type: ResourceType::ColorScheme,
+            version: version.to_owned(),
+            channel: ReleaseChannel::Stable,
+            installed_at: chrono::Utc::now().to_rfc3339(),
+            status: ResourceStatus::Active,
+            config_path: String::new(),
+            data_path: String::new(),
+            validation: fs_types::ValidationStatus::Ok,
+        };
+        inventory
+            .upsert_resource(&resource)
+            .await
             .map_err(|e| ThemeError::StoreError(e.to_string()))
     }
 
