@@ -4,13 +4,16 @@
 // fs-inventory so the Inventory remains the single source of truth for
 // what is installed on this node.
 
+use fs_db::engine::DbConfig;
 use fs_inventory::{Inventory, ResourceStatus};
 use fs_manager_theme::ThemeManager;
 use fs_types::ResourceType;
 
 #[tokio::test]
 async fn theme_install_recorded_in_inventory() {
-    let inv = Inventory::open(":memory:").await.expect("open inventory");
+    let inv = Inventory::open(DbConfig::sqlite(":memory:"))
+        .await
+        .expect("open inventory");
 
     let mgr = ThemeManager::with_noop();
     mgr.install_from_store(&inv, "midnight-blue", "1.0.0")
@@ -31,7 +34,9 @@ async fn theme_install_recorded_in_inventory() {
 
 #[tokio::test]
 async fn theme_install_idempotent() {
-    let inv = Inventory::open(":memory:").await.expect("open inventory");
+    let inv = Inventory::open(DbConfig::sqlite(":memory:"))
+        .await
+        .expect("open inventory");
     let mgr = ThemeManager::with_noop();
 
     // First install
