@@ -2,6 +2,7 @@
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::doc_markdown)]
+#![allow(clippy::unnecessary_literal_bound)]
 // FreeSynergy Language Manager
 //
 // Three-layer locale model:
@@ -78,7 +79,7 @@ impl Language {
 
     /// Human-readable text direction label ("Left-to-right" / "Right-to-left").
     pub fn direction_label(&self) -> &'static str {
-        if self.meta().map_or(false, |m| m.is_rtl()) {
+        if self.meta().is_some_and(fs_i18n::LanguageMeta::is_rtl) {
             "Right-to-left"
         } else {
             "Left-to-right"
