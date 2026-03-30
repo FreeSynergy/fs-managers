@@ -25,7 +25,11 @@ impl OidBytes {
     }
 
     pub fn to_hex(&self) -> String {
-        self.0.iter().map(|b| format!("{:02x}", b)).collect()
+        self.0.iter().fold(String::new(), |mut s, b| {
+            use std::fmt::Write as _;
+            let _ = write!(s, "{b:02x}");
+            s
+        })
     }
 }
 
@@ -276,8 +280,7 @@ fn insert_blob_into_gix_tree(
         let sub_tree_id = entries
             .iter()
             .find(|e| e.filename.as_slice() == target_name)
-            .map(|e| e.oid)
-            .unwrap_or_else(|| gix::ObjectId::empty_tree(repo.object_hash()));
+            .map_or_else(|| gix::ObjectId::empty_tree(repo.object_hash()), |e| e.oid);
 
         let new_sub_tree_id =
             insert_blob_into_gix_tree(repo, sub_tree_id, &path_components[1..], blob_id)?;

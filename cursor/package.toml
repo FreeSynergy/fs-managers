@@ -1,0 +1,8 @@
+[package]
+name        = "fs-manager-cursor"
+version     = "0.1.0"
+type        = "program"
+description = "FreeSynergy cursor manager"
+
+[capabilities]
+provides = ["managers.cursor"]

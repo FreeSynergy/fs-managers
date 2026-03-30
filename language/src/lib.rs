@@ -1,3 +1,7 @@
+#![deny(clippy::all, clippy::pedantic, warnings)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::doc_markdown)]
 // FreeSynergy Language Manager
 //
 // Three-layer locale model:
@@ -59,7 +63,7 @@ impl Language {
         let meta = fs_i18n::language_meta(code);
         Language {
             id: code.to_string(),
-            display_name: meta.map(|m| m.native_name).unwrap_or(code).to_string(),
+            display_name: meta.map_or(code, |m| m.native_name).to_string(),
             locale: locale_for_code(code),
         }
     }
@@ -74,9 +78,10 @@ impl Language {
 
     /// Human-readable text direction label ("Left-to-right" / "Right-to-left").
     pub fn direction_label(&self) -> &'static str {
-        match self.meta().map(|m| m.is_rtl()) {
-            Some(true) => "Right-to-left",
-            _ => "Left-to-right",
+        if self.meta().map_or(false, |m| m.is_rtl()) {
+            "Right-to-left"
+        } else {
+            "Left-to-right"
         }
     }
 }
@@ -177,9 +182,9 @@ impl FormatVariant for DateFormat {
 impl DateFormat {
     pub fn format(&self, year: i32, month: u32, day: u32) -> String {
         match self {
-            Self::DmY => format!("{:02}.{:02}.{}", day, month, year),
-            Self::MdY => format!("{:02}/{:02}/{}", month, day, year),
-            Self::Ymd => format!("{}-{:02}-{:02}", year, month, day),
+            Self::DmY => format!("{day:02}.{month:02}.{year}"),
+            Self::MdY => format!("{month:02}/{day:02}/{year}"),
+            Self::Ymd => format!("{year}-{month:02}-{day:02}"),
         }
     }
 }
@@ -219,7 +224,7 @@ impl FormatVariant for TimeFormat {
 impl TimeFormat {
     pub fn format(&self, hour: u32, minute: u32) -> String {
         match self {
-            Self::H24 => format!("{:02}:{:02}", hour, minute),
+            Self::H24 => format!("{hour:02}:{minute:02}"),
             Self::H12 => {
                 let (h, ampm) = match hour {
                     0 => (12, "AM"),
@@ -227,7 +232,7 @@ impl TimeFormat {
                     12 => (12, "PM"),
                     _ => (hour - 12, "PM"),
                 };
-                format!("{:02}:{:02} {}", h, minute, ampm)
+                format!("{h:02}:{minute:02} {ampm}")
             }
         }
     }
@@ -276,9 +281,8 @@ impl NumberFormat {
 
     fn decimal_sep(&self) -> char {
         match self {
-            Self::EuropeDot => ',',
+            Self::EuropeDot | Self::SpaceComma => ',',
             Self::UsComma => '.',
-            Self::SpaceComma => ',',
         }
     }
 
@@ -286,7 +290,7 @@ impl NumberFormat {
         let abs_str = value.unsigned_abs().to_string();
         let grouped = group_thousands(&abs_str, self.thousands_sep());
         if value < 0 {
-            format!("-{}", grouped)
+            format!("-{grouped}")
         } else {
             grouped
         }
@@ -299,10 +303,11 @@ impl NumberFormat {
         let dec_part = parts.next().unwrap_or("");
         let grouped = group_thousands(int_part, self.thousands_sep());
         let sign = if value < 0.0 { "-" } else { "" };
+        let dec = self.decimal_sep();
         if decimal_places > 0 {
-            format!("{}{}{}{}", sign, grouped, self.decimal_sep(), dec_part)
+            format!("{sign}{grouped}{dec}{dec_part}")
         } else {
-            format!("{}{}", sign, grouped)
+            format!("{sign}{grouped}")
         }
     }
 }
@@ -480,6 +485,7 @@ impl LocaleSettings {
     ///
     /// For every `Some` field in `other`, that value wins.
     /// For `subscribed_languages`, the two lists are unioned (no deduplication loss).
+    #[must_use]
     pub fn merge_with(self, other: &LocaleSettings) -> LocaleSettings {
         LocaleSettings {
             language: other.language.clone().or(self.language),
@@ -604,7 +610,7 @@ impl LanguageManager {
     }
 
     /// Save updated Inventory settings (partial update — only `Some` fields are stored).
-    pub fn save_settings(&self, settings: LocaleSettings) -> Result<(), LanguageError> {
+    pub fn save_settings(&self, settings: &LocaleSettings) -> Result<(), LanguageError> {
         settings
             .save_inventory()
             .map_err(fs_core::ManagerError::StoreError)

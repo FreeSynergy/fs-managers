@@ -125,7 +125,7 @@ impl GitContributorCheck {
     /// the result. This call blocks and may take several seconds.
     ///
     /// Call from a background thread or async task:
-    /// ```rust
+    /// ```rust,ignore
     /// spawn(async { GitContributorCheck::check_and_cache() });
     /// ```
     pub fn check_and_cache() -> ContributorStatus {

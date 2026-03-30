@@ -1,0 +1,8 @@
+[package]
+name        = "fs-manager-ai"
+version     = "0.1.0"
+type        = "program"
+description = "FreeSynergy ai manager"
+
+[capabilities]
+provides = ["managers.ai"]

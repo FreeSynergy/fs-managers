@@ -1,0 +1,8 @@
+[package]
+name        = "fs-manager-language"
+version     = "0.1.0"
+type        = "program"
+description = "FreeSynergy language manager — install, activate, and preview language packs"
+
+[capabilities]
+provides = ["managers.language"]
