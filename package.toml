@@ -1,0 +1,14 @@
+[package]
+id          = "freeSynergy.managers"
+name        = "FreeSynergy Managers"
+kind        = "program"
+version     = "0.1.0"
+description = "FreeSynergy Manager workspace — Language, Theme, Icons, Cursor, AI, Bots, Container managers"
+license     = "MIT"
+
+[provides]
+capabilities = ["managers"]
+
+[service]
+grpc_port = 50090
+rest_port = 8090
