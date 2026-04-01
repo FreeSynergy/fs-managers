@@ -55,3 +55,46 @@ impl ManagerLayout for ContainerManager {
         }
     }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use crate::ContainerManager;
+    use fs_render::{FsView, ManagerLayout};
+
+    fn manager() -> ContainerManager {
+        ContainerManager::with_noop()
+    }
+
+    #[test]
+    fn fsx_view_produces_widget() {
+        let w = manager().view();
+        assert_eq!(w.widget_id(), "container-section-list");
+    }
+
+    #[test]
+    fn manager_layout_title() {
+        assert_eq!(manager().title(), "Container App Manager");
+    }
+
+    #[test]
+    fn sidebar_has_list_item() {
+        let items = manager().sidebar_items();
+        assert!(!items.is_empty());
+        assert_eq!(items[0].id, "list");
+    }
+
+    #[test]
+    fn content_for_list() {
+        let w = manager().content_for("list");
+        assert_eq!(w.widget_id(), "container-section-list");
+    }
+
+    #[test]
+    fn content_for_unknown_section() {
+        let w = manager().content_for("nonexistent");
+        assert_eq!(w.widget_id(), "container-unknown-section");
+        assert!(!w.is_enabled());
+    }
+}

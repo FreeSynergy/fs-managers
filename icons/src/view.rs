@@ -55,3 +55,46 @@ impl ManagerLayout for IconManager {
         }
     }
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use crate::IconManager;
+    use fs_render::{FsView, ManagerLayout};
+
+    fn manager() -> IconManager {
+        IconManager::new("/tmp/icons-test", vec![])
+    }
+
+    #[test]
+    fn fsx_view_produces_widget() {
+        let w = manager().view();
+        assert_eq!(w.widget_id(), "icons-section-list");
+    }
+
+    #[test]
+    fn manager_layout_title() {
+        assert_eq!(manager().title(), "Icon Manager");
+    }
+
+    #[test]
+    fn sidebar_has_list_item() {
+        let items = manager().sidebar_items();
+        assert!(!items.is_empty());
+        assert_eq!(items[0].id, "list");
+    }
+
+    #[test]
+    fn content_for_list() {
+        let w = manager().content_for("list");
+        assert_eq!(w.widget_id(), "icons-section-list");
+    }
+
+    #[test]
+    fn content_for_unknown_section() {
+        let w = manager().content_for("nonexistent");
+        assert_eq!(w.widget_id(), "icons-unknown-section");
+        assert!(!w.is_enabled());
+    }
+}
