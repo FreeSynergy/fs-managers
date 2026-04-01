@@ -22,8 +22,13 @@
 //   - FormatVariant trait: label() + example() + all() on DateFormat/TimeFormat/NumberFormat
 //   - No match blocks outside format() methods — types carry their own behavior
 
+pub mod active;
+pub mod download;
 pub mod git;
 pub mod git_contributor;
+pub mod list;
+pub mod preview;
+pub mod view;
 
 pub use git_contributor::{ContributorStatus, GitContributorCheck};
 

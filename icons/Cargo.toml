@@ -9,4 +9,6 @@ name = "fs_manager_icons"
 path = "src/lib.rs"
 
 [dependencies]
-fs-core = { path = "../../fs-libs/fs-core" }
+fs-core   = { path = "../../fs-libs/fs-core" }
+fs-i18n   = { path = "../../fs-i18n" }
+fs-render = { path = "../../fs-render" }

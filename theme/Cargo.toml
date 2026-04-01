@@ -10,7 +10,9 @@ path = "src/lib.rs"
 
 [dependencies]
 fs-core      = { path = "../../fs-libs/fs-core" }
+fs-i18n      = { path = "../../fs-i18n" }
 fs-inventory = { path = "../../fs-inventory" }
+fs-render    = { path = "../../fs-render" }
 fs-types     = { path = "../../fs-libs/fs-types" }
 tokio        = { version = "1", features = ["full"] }
 chrono       = { version = "0.4", features = ["serde"] }

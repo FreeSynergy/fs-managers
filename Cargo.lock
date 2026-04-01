@@ -913,6 +913,8 @@ name = "fs-manager-container"
 version = "0.1.0"
 dependencies = [
  "fs-core",
+ "fs-i18n",
+ "fs-render",
 ]
 
 [[package]]
@@ -920,6 +922,8 @@ name = "fs-manager-cursor"
 version = "0.1.0"
 dependencies = [
  "fs-core",
+ "fs-i18n",
+ "fs-render",
 ]
 
 [[package]]
@@ -927,6 +931,8 @@ name = "fs-manager-icons"
 version = "0.1.0"
 dependencies = [
  "fs-core",
+ "fs-i18n",
+ "fs-render",
 ]
 
 [[package]]
@@ -935,6 +941,7 @@ version = "0.1.0"
 dependencies = [
  "fs-core",
  "fs-i18n",
+ "fs-render",
  "gix",
  "serde",
  "toml",
@@ -947,9 +954,18 @@ dependencies = [
  "chrono",
  "fs-core",
  "fs-db",
+ "fs-i18n",
  "fs-inventory",
+ "fs-render",
  "fs-types",
  "tokio",
+]
+
+[[package]]
+name = "fs-render"
+version = "0.2.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

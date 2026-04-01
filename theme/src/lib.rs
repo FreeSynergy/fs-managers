@@ -1,4 +1,5 @@
 #![deny(clippy::all, clippy::pedantic, warnings)]
+pub mod view;
 // FreeSynergy Theme Manager
 //
 // Responsibilities:

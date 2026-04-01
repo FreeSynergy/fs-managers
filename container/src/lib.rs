@@ -12,6 +12,8 @@
 
 use std::sync::Arc;
 
+pub mod view;
+
 use fs_core::{FsManager, ManagerStore, NoopStore};
 
 /// A containerized application entry.

@@ -15,6 +15,8 @@
 
 use std::path::PathBuf;
 
+pub mod view;
+
 pub use fs_core::RepositoryError;
 use fs_core::{
     parse_manifest_sections, FsManager, ManifestBuilder, Repository, RepositoryManager, SetBase,
