@@ -898,6 +898,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-manager-auth"
+version = "0.1.0"
+dependencies = [
+ "fs-core",
+ "fs-i18n",
+ "fs-render",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "fs-manager-bots"
 version = "0.1.0"
 dependencies = [
@@ -959,6 +969,22 @@ dependencies = [
  "fs-render",
  "fs-types",
  "tokio",
+]
+
+[[package]]
+name = "fs-manager-zentinel"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "fs-bus",
+ "fs-core",
+ "fs-i18n",
+ "fs-render",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

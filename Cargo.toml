@@ -7,5 +7,7 @@ members = [
     "cursor",
     "bots",
     "ai",
+    "auth",
+    "zentinel",
 ]
 resolver = "2"

@@ -1,0 +1,24 @@
+[package]
+name        = "fs-manager-zentinel"
+description = "FreeSynergy Zentinel Manager — Facade over Zentinel reverse-proxy API, auto-route registration"
+version     = "0.1.0"
+edition     = "2021"
+license     = "MIT"
+
+[lib]
+name = "fs_manager_zentinel"
+path = "src/lib.rs"
+
+[dependencies]
+fs-core   = { path = "../../fs-libs/fs-core" }
+fs-i18n   = { path = "../../fs-i18n" }
+fs-render = { path = "../../fs-render" }
+fs-bus    = { path = "../../fs-bus" }
+thiserror  = "2"
+serde      = { version = "1", features = ["derive"] }
+async-trait = "0.1"
+tracing    = "0.1"
+
+[dev-dependencies]
+serde_json = "1"
+tokio      = { version = "1", features = ["full"] }

@@ -1,0 +1,16 @@
+[package]
+name        = "fs-manager-auth"
+description = "FreeSynergy Auth Manager — Kanidm setup wizard + IAM configuration"
+version     = "0.1.0"
+edition     = "2021"
+license     = "MIT"
+
+[lib]
+name = "fs_manager_auth"
+path = "src/lib.rs"
+
+[dependencies]
+fs-core   = { path = "../../fs-libs/fs-core" }
+fs-i18n   = { path = "../../fs-i18n" }
+fs-render = { path = "../../fs-render" }
+thiserror = "2"
