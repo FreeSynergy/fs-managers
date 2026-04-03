@@ -7,6 +7,13 @@
 //   - Track OIDC clients (add / remove) in local state
 //   - Apply changes to a running Kanidm instance via admin bearer token
 //   - Report sync errors without crashing — errors are stored, not panicked
+//
+// NOTE — gRPC-First exception:
+//   This module uses reqwest + serde_json (raw REST) instead of gRPC because
+//   Kanidm is a 3rd-party fork with no gRPC interface — only REST.
+//   All FS-internal service-to-service calls MUST use gRPC (tonic).
+//   Once fs-manager-auth runs as a standalone container, other FS programs
+//   will call it via gRPC — this file remains the only REST boundary.
 
 use crate::{config::OidcClient, error::AuthManagerError};
 
