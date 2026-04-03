@@ -19,9 +19,11 @@
 
 pub mod config;
 pub mod error;
+pub mod oidc;
 pub mod view;
 pub mod wizard;
 
 pub use config::KanidmConfig;
 pub use error::AuthManagerError;
+pub use oidc::{OidcClientManager, SyncOutcome};
 pub use wizard::{KanidmSetupWizard, WizardOutcome, WizardStep};

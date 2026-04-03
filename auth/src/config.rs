@@ -5,7 +5,7 @@
 // to /etc/freesynergy/kanidm/config.toml before starting the container.
 
 /// A registered OIDC client (service that authenticates against Kanidm).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct OidcClient {
     /// Logical name, e.g. `"forgejo"` or `"outline"`.
     pub id: String,
