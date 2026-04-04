@@ -46,11 +46,7 @@ fn wizard_summary_widget(wizard: &WikiSetupWizard) -> Box<dyn FsWidget> {
             fs_i18n::t(keys::CONFIG_OIDC_ISSUER_LABEL),
             oidc_status
         ),
-        format!(
-            "{}: {}",
-            fs_i18n::t(keys::CONFIG_S3_LABEL),
-            s3_status
-        ),
+        format!("{}: {}", fs_i18n::t(keys::CONFIG_S3_LABEL), s3_status),
         format!(
             "Step: {}",
             if *wizard.step() == WizardStep::Done {
@@ -80,11 +76,7 @@ fn services_widget() -> Box<dyn FsWidget> {
             "Outline"
         ),
         String::new(),
-        format!(
-            "{}  —  {}",
-            fs_i18n::t(keys::SERVICE_WIKIJS),
-            "Wiki.js"
-        ),
+        format!("{}  —  {}", fs_i18n::t(keys::SERVICE_WIKIJS), "Wiki.js"),
         String::new(),
         format!(
             "[{}]  [{}]  [{}]",

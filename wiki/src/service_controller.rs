@@ -100,10 +100,7 @@ impl fs_manager_core::CategoryManager for WikiCategoryController {
 
         for platform in [WikiPlatform::Outline, WikiPlatform::WikiJs] {
             let ctrl = self.ctrl_for(&platform);
-            let status = ctrl
-                .status()
-                .await
-                .unwrap_or(ServiceStatus::Unknown);
+            let status = ctrl.status().await.unwrap_or(ServiceStatus::Unknown);
             let installed = !matches!(status, ServiceStatus::Unknown);
             services.push(ServiceInfo {
                 id: platform.service_id().into(),

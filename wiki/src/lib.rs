@@ -24,9 +24,12 @@ pub mod config;
 pub mod error;
 pub mod keys;
 pub mod provider;
+pub mod service_controller;
+pub mod view;
 pub mod wizard;
 
-pub use config::{OidcConfig, S3Config, WikiConfig, WikiPlatform};
+pub use config::{OidcConfig, S3Config, WikiConfig, WikiConfigStore, WikiPlatform};
 pub use error::WikiManagerError;
 pub use provider::{provider_for, OutlineAdapter, WikiJsAdapter, WikiProvider};
+pub use service_controller::WikiCategoryController;
 pub use wizard::{WikiSetupWizard, WizardOutcome, WizardStep};
