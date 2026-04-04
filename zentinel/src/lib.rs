@@ -12,18 +12,21 @@
 //
 // # Modules
 //
-//   - [`route`]   — RouteConfig + RouteTable
-//   - [`manager`] — ZentinelManager (Facade)
-//   - [`error`]   — ZentinelManagerError
-//   - [`view`]    — FsView + ManagerLayout (only file importing fs-render)
+//   - [`route`]              — RouteConfig + RouteTable
+//   - [`manager`]            — ZentinelManager (Facade)
+//   - [`error`]              — ZentinelManagerError
+//   - [`view`]               — FsView + ManagerLayout (only file importing fs-render)
+//   - [`service_controller`] — ZentinelProxyController (ServiceController + CategoryManager)
 
 pub mod bus_handler;
 pub mod error;
 pub mod manager;
 pub mod route;
+pub mod service_controller;
 pub mod view;
 
 pub use bus_handler::{ServiceRegisteredPayload, ServiceStoppedPayload, ZentinelBusHandler};
 pub use error::ZentinelManagerError;
 pub use manager::ZentinelManager;
 pub use route::{RouteConfig, RouteProtocol, RouteTable};
+pub use service_controller::ZentinelProxyController;

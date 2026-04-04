@@ -83,6 +83,30 @@ fn dns_hints_widget() -> Box<dyn FsWidget> {
     })
 }
 
+// ── Services tab widget ───────────────────────────────────────────────────────
+
+fn services_widget() -> Box<dyn FsWidget> {
+    let items = vec![
+        format!(
+            "Stalwart Mail  —  {}",
+            fs_i18n::t("manager-service-tab-primary")
+        ),
+        String::new(),
+        format!(
+            "[{}]  [{}]  [{}]",
+            fs_i18n::t("manager-service-cmd-start"),
+            fs_i18n::t("manager-service-cmd-stop"),
+            fs_i18n::t("manager-service-cmd-restart"),
+        ),
+    ];
+    Box::new(ListWidget {
+        id: "mail-services".into(),
+        items,
+        selected_index: None,
+        enabled: true,
+    })
+}
+
 // ── FsView + ManagerLayout ────────────────────────────────────────────────────
 
 impl FsView for StalwartSetupWizard {
@@ -108,6 +132,11 @@ impl ManagerLayout for StalwartSetupWizard {
                 label: fs_i18n::t("mail-wizard-nav-dns").to_string(),
                 icon: "🌐",
             },
+            ManagerSidebarItem {
+                id: "services",
+                label: fs_i18n::t("manager-service-tab-title").to_string(),
+                icon: "⚙",
+            },
         ]
     }
 
@@ -115,6 +144,7 @@ impl ManagerLayout for StalwartSetupWizard {
         match item_id {
             "setup" => wizard_summary_widget(self),
             "dns" => dns_hints_widget(),
+            "services" => services_widget(),
             _ => Box::new(ListWidget {
                 id: "mail-wizard-unknown".into(),
                 items: vec![format!("Unknown section: {item_id}")],

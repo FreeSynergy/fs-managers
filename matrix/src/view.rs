@@ -98,6 +98,30 @@ fn iam_info_widget() -> Box<dyn FsWidget> {
     })
 }
 
+// ── Services tab widget ───────────────────────────────────────────────────────
+
+fn services_widget() -> Box<dyn FsWidget> {
+    let items = vec![
+        format!(
+            "Tuwunel (Matrix)  —  {}",
+            fs_i18n::t("manager-service-tab-primary")
+        ),
+        String::new(),
+        format!(
+            "[{}]  [{}]  [{}]",
+            fs_i18n::t("manager-service-cmd-start"),
+            fs_i18n::t("manager-service-cmd-stop"),
+            fs_i18n::t("manager-service-cmd-restart"),
+        ),
+    ];
+    Box::new(ListWidget {
+        id: "matrix-services".into(),
+        items,
+        selected_index: None,
+        enabled: true,
+    })
+}
+
 // ── FsView + ManagerLayout ────────────────────────────────────────────────────
 
 impl FsView for TuwunelSetupWizard {
@@ -123,6 +147,11 @@ impl ManagerLayout for TuwunelSetupWizard {
                 label: fs_i18n::t("matrix-wizard-nav-iam").to_string(),
                 icon: "🔑",
             },
+            ManagerSidebarItem {
+                id: "services",
+                label: fs_i18n::t("manager-service-tab-title").to_string(),
+                icon: "⚙",
+            },
         ]
     }
 
@@ -130,6 +159,7 @@ impl ManagerLayout for TuwunelSetupWizard {
         match item_id {
             "setup" => wizard_summary_widget(self),
             "iam" => iam_info_widget(),
+            "services" => services_widget(),
             _ => Box::new(ListWidget {
                 id: "matrix-wizard-unknown".into(),
                 items: vec![format!("Unknown section: {item_id}")],

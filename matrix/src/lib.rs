@@ -13,16 +13,19 @@
 //
 // # Modules
 //
-//   - [`wizard`]  — TuwunelSetupWizard state machine
-//   - [`config`]  — TuwunelConfig (output of the wizard)
-//   - [`error`]   — MatrixManagerError
-//   - [`view`]    — FsView + ManagerLayout impl (only file importing fs-render)
+//   - [`wizard`]     — TuwunelSetupWizard state machine
+//   - [`config`]     — TuwunelConfig (output of the wizard)
+//   - [`error`]      — MatrixManagerError
+//   - [`view`]       — FsView + ManagerLayout impl (only file importing fs-render)
+//   - [`app_config`] — TuwunelMessengerController (ServiceController + CategoryManager)
 
+pub mod app_config;
 pub mod config;
 pub mod error;
 pub mod view;
 pub mod wizard;
 
+pub use app_config::TuwunelMessengerController;
 pub use config::TuwunelConfig;
 pub use error::MatrixManagerError;
 pub use wizard::{TuwunelSetupWizard, WizardOutcome, WizardStep};

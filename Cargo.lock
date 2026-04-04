@@ -453,7 +453,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -917,6 +917,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-app-forge"
+version = "0.1.0"
+dependencies = [
+ "fs-i18n",
+ "serde",
+ "serde_yaml",
+ "thiserror 2.0.18",
+ "toml 0.8.23",
+]
+
+[[package]]
 name = "fs-bus"
 version = "0.1.0"
 dependencies = [
@@ -1082,8 +1093,12 @@ dependencies = [
 name = "fs-manager-auth"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "fs-app-forge",
  "fs-core",
  "fs-i18n",
+ "fs-manager-core",
+ "fs-pod-forge",
  "fs-render",
  "reqwest 0.12.28",
  "serde",
@@ -1109,6 +1124,18 @@ dependencies = [
  "fs-core",
  "fs-i18n",
  "fs-render",
+]
+
+[[package]]
+name = "fs-manager-core"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "fs-core",
+ "fs-i18n",
+ "serde",
+ "thiserror 2.0.18",
+ "tokio",
 ]
 
 [[package]]
@@ -1145,8 +1172,12 @@ dependencies = [
 name = "fs-manager-mail"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "fs-app-forge",
  "fs-core",
  "fs-i18n",
+ "fs-manager-core",
+ "fs-pod-forge",
  "fs-render",
  "reqwest 0.12.28",
  "serde",
@@ -1158,8 +1189,10 @@ dependencies = [
 name = "fs-manager-matrix"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "fs-core",
  "fs-i18n",
+ "fs-manager-core",
  "fs-render",
  "reqwest 0.12.28",
  "serde",
@@ -1198,6 +1231,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-manager-wiki"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "fs-config",
+ "fs-core",
+ "fs-error",
+ "fs-i18n",
+ "fs-manager-core",
+ "fs-render",
+ "serde",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "fs-manager-zentinel"
 version = "0.1.0"
 dependencies = [
@@ -1205,12 +1254,23 @@ dependencies = [
  "fs-bus",
  "fs-core",
  "fs-i18n",
+ "fs-manager-core",
  "fs-render",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "fs-pod-forge"
+version = "0.1.0"
+dependencies = [
+ "fs-i18n",
+ "serde",
+ "serde_yaml",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -3497,7 +3557,7 @@ dependencies = [
  "once_cell",
  "socket2 0.6.3",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4226,6 +4286,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml"
+version = "0.9.34+deprecated"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
+dependencies = [
+ "indexmap 2.13.0",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4457,7 +4530,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "psm",
- "windows-sys 0.52.0",
  "windows-sys 0.59.0",
 ]
 
@@ -5139,6 +5211,12 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
 
 [[package]]
 name = "untrusted"

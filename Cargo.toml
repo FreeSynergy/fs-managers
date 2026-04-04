@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "core",
     "language",
     "theme",
     "container",
@@ -12,5 +13,6 @@ members = [
     "mail",
     "matrix",
     "telegram",
+    "wiki",
 ]
 resolver = "2"

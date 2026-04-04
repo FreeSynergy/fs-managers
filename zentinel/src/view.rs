@@ -57,6 +57,27 @@ fn status_widget(manager: &ZentinelManager) -> Box<dyn FsWidget> {
     })
 }
 
+// ── Services tab widget ───────────────────────────────────────────────────────
+
+fn services_widget() -> Box<dyn FsWidget> {
+    let items = vec![
+        format!("Zentinel  —  {}", fs_i18n::t("manager-service-tab-primary")),
+        String::new(),
+        format!(
+            "[{}]  [{}]  [{}]",
+            fs_i18n::t("manager-service-cmd-start"),
+            fs_i18n::t("manager-service-cmd-stop"),
+            fs_i18n::t("manager-service-cmd-restart"),
+        ),
+    ];
+    Box::new(ListWidget {
+        id: "zentinel-services".into(),
+        items,
+        selected_index: None,
+        enabled: true,
+    })
+}
+
 // ── FsView + ManagerLayout ────────────────────────────────────────────────────
 
 impl FsView for ZentinelManager {
@@ -82,6 +103,11 @@ impl ManagerLayout for ZentinelManager {
                 label: fs_i18n::t("zentinel-nav-status").to_string(),
                 icon: "📡",
             },
+            ManagerSidebarItem {
+                id: "services",
+                label: fs_i18n::t("manager-service-tab-title").to_string(),
+                icon: "⚙",
+            },
         ]
     }
 
@@ -89,6 +115,7 @@ impl ManagerLayout for ZentinelManager {
         match item_id {
             "routes" => route_list_widget(self),
             "status" => status_widget(self),
+            "services" => services_widget(),
             _ => Box::new(ListWidget {
                 id: "zentinel-unknown".into(),
                 items: vec![format!("Unknown section: {item_id}")],

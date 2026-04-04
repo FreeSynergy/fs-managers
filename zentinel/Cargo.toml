@@ -10,15 +10,16 @@ name = "fs_manager_zentinel"
 path = "src/lib.rs"
 
 [dependencies]
-fs-core   = { path = "../../fs-libs/fs-core" }
-fs-i18n   = { path = "../../fs-i18n" }
-fs-render = { path = "../../fs-render" }
-fs-bus    = { path = "../../fs-bus" }
-thiserror  = "2"
-serde      = { version = "1", features = ["derive"] }
-async-trait = "0.1"
-tracing    = "0.1"
+fs-core          = { path = "../../fs-libs/fs-core" }
+fs-i18n          = { path = "../../fs-i18n" }
+fs-render        = { path = "../../fs-render" }
+fs-bus           = { path = "../../fs-bus" }
+fs-manager-core  = { path = "../core" }
+thiserror        = "2"
+serde            = { version = "1", features = ["derive"] }
+async-trait      = "0.1"
+tracing          = "0.1"
+tokio            = { version = "1", features = ["full"] }
 
 [dev-dependencies]
 serde_json = "1"
-tokio      = { version = "1", features = ["full"] }

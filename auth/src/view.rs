@@ -74,6 +74,33 @@ fn oidc_clients_widget(wizard: &KanidmSetupWizard) -> Box<dyn FsWidget> {
     })
 }
 
+// ── Services tab widget ───────────────────────────────────────────────────────
+
+fn services_widget() -> Box<dyn FsWidget> {
+    // Static snapshot of known IAM services.
+    // Real-time status is fetched via KanidmIamController::list_all() at runtime.
+    let items = vec![
+        format!("Kanidm  —  {}", fs_i18n::t("manager-service-tab-primary")),
+        format!(
+            "Keycloak  —  {}",
+            fs_i18n::t("manager-service-status-unknown")
+        ),
+        String::new(),
+        format!(
+            "[{}]  [{}]  [{}]",
+            fs_i18n::t("manager-service-cmd-start"),
+            fs_i18n::t("manager-service-cmd-stop"),
+            fs_i18n::t("manager-service-cmd-restart"),
+        ),
+    ];
+    Box::new(ListWidget {
+        id: "auth-services".into(),
+        items,
+        selected_index: None,
+        enabled: true,
+    })
+}
+
 // ── FsView + ManagerLayout ────────────────────────────────────────────────────
 
 impl FsView for KanidmSetupWizard {
@@ -99,6 +126,11 @@ impl ManagerLayout for KanidmSetupWizard {
                 label: fs_i18n::t("auth-wizard-nav-oidc").to_string(),
                 icon: "🔗",
             },
+            ManagerSidebarItem {
+                id: "services",
+                label: fs_i18n::t("manager-service-tab-title").to_string(),
+                icon: "⚙",
+            },
         ]
     }
 
@@ -106,6 +138,7 @@ impl ManagerLayout for KanidmSetupWizard {
         match item_id {
             "setup" => wizard_summary_widget(self),
             "oidc" => oidc_clients_widget(self),
+            "services" => services_widget(),
             _ => Box::new(ListWidget {
                 id: "auth-wizard-unknown".into(),
                 items: vec![format!("Unknown section: {item_id}")],

@@ -10,12 +10,14 @@ name = "fs_manager_matrix"
 path = "src/lib.rs"
 
 [dependencies]
-fs-core   = { path = "../../fs-libs/fs-core" }
-fs-i18n   = { path = "../../fs-i18n" }
-fs-render = { path = "../../fs-render" }
-thiserror = "2"
-serde     = { version = "1", features = ["derive"] }
-tokio     = { version = "1", features = ["full"] }
+fs-core          = { path = "../../fs-libs/fs-core" }
+fs-i18n          = { path = "../../fs-i18n" }
+fs-render        = { path = "../../fs-render" }
+fs-manager-core  = { path = "../core" }
+thiserror        = "2"
+serde            = { version = "1", features = ["derive"] }
+tokio            = { version = "1", features = ["full"] }
+async-trait      = "0.1"
 
 [dependencies.reqwest]
 version          = "0.12"
