@@ -10,5 +10,7 @@ members = [
     "auth",
     "zentinel",
     "mail",
+    "matrix",
+    "telegram",
 ]
 resolver = "2"

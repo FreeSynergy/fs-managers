@@ -1,0 +1,31 @@
+[package]
+name        = "fs-manager-telegram"
+description = "FreeSynergy Telegram Channel Adapter Manager — setup wizard + status"
+version     = "0.1.0"
+edition     = "2021"
+license     = "MIT"
+authors     = ["FreeSynergy.Net"]
+
+[[bin]]
+name = "fs-telegram"
+path = "src/main.rs"
+
+[lib]
+name = "fs_manager_telegram"
+path = "src/lib.rs"
+
+[dependencies]
+fs-channel-telegram = { path = "../../fs-channel-telegram" }
+fs-config           = { path = "../../fs-config" }
+fs-error            = { path = "../../fs-libs/fs-error" }
+fs-i18n             = { path = "../../fs-i18n" }
+fs-render           = { path = "../../fs-render" }
+serde               = { version = "1", features = ["derive"] }
+serde_json          = "1"
+tokio               = { version = "1", features = ["full"] }
+anyhow              = "1"
+
+[dependencies.reqwest]
+version          = "0.12"
+features         = ["json", "rustls-tls"]
+default-features = false
