@@ -3,7 +3,10 @@
 // This is the ONLY file in this crate that imports fs-render.
 // Domain objects (wizard, config, provider) do NOT import fs-render.
 
-use fs_render::{FsView, FsWidget, ListWidget, ManagerLayout, ManagerSidebarItem};
+use fs_render::{
+    FsView, FsWidget, ListWidget, ManagerLayout, ManagerSidebarItem, ProgramView,
+    ProgramViewProvider,
+};
 
 use crate::{
     keys,
@@ -93,7 +96,17 @@ fn services_widget() -> Box<dyn FsWidget> {
     })
 }
 
-// ── FsView + ManagerLayout ────────────────────────────────────────────────────
+// ── ProgramViewProvider + FsView + ManagerLayout ─────────────────────────────
+
+impl ProgramViewProvider for WikiSetupWizard {
+    fn available_views(&self) -> Vec<ProgramView> {
+        vec![
+            ProgramView::Info,
+            ProgramView::Manual,
+            ProgramView::SettingsContainer,
+        ]
+    }
+}
 
 impl FsView for WikiSetupWizard {
     fn view(&self) -> Box<dyn FsWidget> {

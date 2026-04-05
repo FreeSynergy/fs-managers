@@ -3,7 +3,10 @@
 // This is the ONLY file in this crate that imports fs-render.
 
 use fs_core::FsManager;
-use fs_render::{FsView, FsWidget, ListWidget, ManagerLayout, ManagerSidebarItem};
+use fs_render::{
+    FsView, FsWidget, ListWidget, ManagerLayout, ManagerSidebarItem, ProgramView,
+    ProgramViewProvider,
+};
 
 use crate::manager::ZentinelManager;
 
@@ -78,7 +81,17 @@ fn services_widget() -> Box<dyn FsWidget> {
     })
 }
 
-// ── FsView + ManagerLayout ────────────────────────────────────────────────────
+// ── ProgramViewProvider + FsView + ManagerLayout ─────────────────────────────
+
+impl ProgramViewProvider for ZentinelManager {
+    fn available_views(&self) -> Vec<ProgramView> {
+        vec![
+            ProgramView::Info,
+            ProgramView::Manual,
+            ProgramView::SettingsContainer,
+        ]
+    }
+}
 
 impl FsView for ZentinelManager {
     fn view(&self) -> Box<dyn FsWidget> {

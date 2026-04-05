@@ -3,7 +3,10 @@
 // This is the ONLY file in this crate that imports fs-render.
 // Domain objects (wizard, config) do NOT import fs-render.
 
-use fs_render::{FsView, FsWidget, ListWidget, ManagerLayout, ManagerSidebarItem};
+use fs_render::{
+    FsView, FsWidget, ListWidget, ManagerLayout, ManagerSidebarItem, ProgramView,
+    ProgramViewProvider,
+};
 
 use crate::{wizard::TuwunelSetupWizard, wizard::WizardStep};
 
@@ -122,7 +125,17 @@ fn services_widget() -> Box<dyn FsWidget> {
     })
 }
 
-// ── FsView + ManagerLayout ────────────────────────────────────────────────────
+// ── ProgramViewProvider + FsView + ManagerLayout ─────────────────────────────
+
+impl ProgramViewProvider for TuwunelSetupWizard {
+    fn available_views(&self) -> Vec<ProgramView> {
+        vec![
+            ProgramView::Info,
+            ProgramView::Manual,
+            ProgramView::SettingsContainer,
+        ]
+    }
+}
 
 impl FsView for TuwunelSetupWizard {
     fn view(&self) -> Box<dyn FsWidget> {

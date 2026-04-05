@@ -123,6 +123,7 @@ impl ThemeManager {
             config_path: String::new(),
             data_path: String::new(),
             validation: fs_types::ValidationStatus::Ok,
+            caption: None,
         };
         inventory
             .upsert_resource(&resource)
