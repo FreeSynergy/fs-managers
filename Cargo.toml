@@ -14,5 +14,6 @@ members = [
     "matrix",
     "telegram",
     "wiki",
+    "forgejo",
 ]
 resolver = "2"

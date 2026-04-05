@@ -1,0 +1,23 @@
+[package]
+name        = "fs-manager-forgejo"
+description = "FreeSynergy Forgejo Manager — Git forge setup wizard and service controller"
+version     = "0.1.0"
+edition     = "2021"
+license     = "MIT"
+authors     = ["FreeSynergy.Net"]
+
+[lib]
+name = "fs_manager_forgejo"
+path = "src/lib.rs"
+
+[dependencies]
+fs-core          = { path = "../../fs-libs/fs-core" }
+fs-config        = { path = "../../fs-config" }
+fs-error         = { path = "../../fs-libs/fs-error" }
+fs-i18n          = { path = "../../fs-i18n" }
+fs-render        = { path = "../../fs-render" }
+fs-manager-core  = { path = "../core" }
+serde            = { version = "1", features = ["derive"] }
+thiserror        = "2"
+tokio            = { version = "1", features = ["full"] }
+async-trait      = "0.1"

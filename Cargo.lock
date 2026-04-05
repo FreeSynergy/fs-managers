@@ -1148,6 +1148,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs-manager-forgejo"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "fs-config",
+ "fs-core",
+ "fs-error",
+ "fs-i18n",
+ "fs-manager-core",
+ "fs-render",
+ "serde",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "fs-manager-icons"
 version = "0.1.0"
 dependencies = [
